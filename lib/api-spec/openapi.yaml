@@ -1,22 +1,47 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: IKODI Student Sponsorship Management System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: students
+    description: Student management
+  - name: sponsors
+    description: Sponsor management
+  - name: sponsorships
+    description: Sponsorship allocation
+  - name: payments
+    description: Payment tracking
+  - name: schools
+    description: School management
+  - name: academic
+    description: Academic progress tracking
+  - name: communications
+    description: Messaging and notifications
+  - name: audit
+    description: Audit logs
+  - name: reports
+    description: Reports and analytics
+  - name: documents
+    description: Document management
+  - name: dashboard
+    description: Dashboard summary data
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +49,836 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with system-generated credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current session
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all system users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [secretary, admin, super_admin]
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a new system user (Super Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserWithCredentials"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      operationId: updateUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: User deleted
+
+  /schools:
+    get:
+      operationId: listSchools
+      tags: [schools]
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [primary, secondary, higher_learning]
+      responses:
+        "200":
+          description: List of schools
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/School"
+    post:
+      operationId: createSchool
+      tags: [schools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSchoolBody"
+      responses:
+        "201":
+          description: School created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+
+  /schools/{id}:
+    get:
+      operationId: getSchool
+      tags: [schools]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: School details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+    put:
+      operationId: updateSchool
+      tags: [schools]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSchoolBody"
+      responses:
+        "200":
+          description: School updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: schoolId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, graduated]
+        - name: sponsorshipStatus
+          in: query
+          schema:
+            type: string
+            enum: [sponsored, partial, unsponsored]
+        - name: term
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentBody"
+      responses:
+        "201":
+          description: Student created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDetail"
+    put:
+      operationId: updateStudent
+      tags: [students]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentBody"
+      responses:
+        "200":
+          description: Student updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Student deleted
+
+  /students/{id}/academic-records:
+    get:
+      operationId: getStudentAcademicRecords
+      tags: [academic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Academic records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcademicRecord"
+    post:
+      operationId: addAcademicRecord
+      tags: [academic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAcademicRecordBody"
+      responses:
+        "201":
+          description: Academic record added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicRecord"
+
+  /sponsors:
+    get:
+      operationId: listSponsors
+      tags: [sponsors]
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [individual, organization]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+      responses:
+        "200":
+          description: List of sponsors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sponsor"
+    post:
+      operationId: createSponsor
+      tags: [sponsors]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSponsorBody"
+      responses:
+        "201":
+          description: Sponsor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsor"
+
+  /sponsors/{id}:
+    get:
+      operationId: getSponsor
+      tags: [sponsors]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sponsor details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SponsorDetail"
+    put:
+      operationId: updateSponsor
+      tags: [sponsors]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSponsorBody"
+      responses:
+        "200":
+          description: Sponsor updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsor"
+    delete:
+      operationId: deleteSponsor
+      tags: [sponsors]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Sponsor deleted
+
+  /sponsorships:
+    get:
+      operationId: listSponsorships
+      tags: [sponsorships]
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: integer
+        - name: sponsorId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, completed]
+        - name: term
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of sponsorships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sponsorship"
+    post:
+      operationId: createSponsorship
+      tags: [sponsorships]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSponsorshipBody"
+      responses:
+        "201":
+          description: Sponsorship created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsorship"
+
+  /sponsorships/{id}:
+    get:
+      operationId: getSponsorship
+      tags: [sponsorships]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sponsorship details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsorship"
+    put:
+      operationId: updateSponsorship
+      tags: [sponsorships]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSponsorshipBody"
+      responses:
+        "200":
+          description: Sponsorship updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsorship"
+    delete:
+      operationId: deleteSponsorship
+      tags: [sponsorships]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Sponsorship deleted
+
+  /payments:
+    get:
+      operationId: listPayments
+      tags: [payments]
+      parameters:
+        - name: sponsorId
+          in: query
+          schema:
+            type: integer
+        - name: studentId
+          in: query
+          schema:
+            type: integer
+        - name: sponsorshipId
+          in: query
+          schema:
+            type: integer
+        - name: method
+          in: query
+          schema:
+            type: string
+        - name: term
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+    post:
+      operationId: createPayment
+      tags: [payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentBody"
+      responses:
+        "201":
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /payments/{id}:
+    get:
+      operationId: getPayment
+      tags: [payments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+    delete:
+      operationId: deletePayment
+      tags: [payments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Payment deleted
+
+  /communications:
+    get:
+      operationId: listCommunications
+      tags: [communications]
+      parameters:
+        - name: recipientType
+          in: query
+          schema:
+            type: string
+            enum: [student, sponsor, guardian]
+      responses:
+        "200":
+          description: List of communications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Communication"
+    post:
+      operationId: sendCommunication
+      tags: [communications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendCommunicationBody"
+      responses:
+        "201":
+          description: Communication sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Communication"
+
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [audit]
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogList"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary statistics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent system activity
+      responses:
+        "200":
+          description: Recent activity items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/financial-overview:
+    get:
+      operationId: getFinancialOverview
+      tags: [dashboard]
+      summary: Get financial overview by term
+      parameters:
+        - name: term
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Financial overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialOverview"
+
+  /dashboard/sponsorship-stats:
+    get:
+      operationId: getSponsorshipStats
+      tags: [dashboard]
+      summary: Get sponsorship status breakdown
+      responses:
+        "200":
+          description: Sponsorship statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SponsorshipStats"
+
+  /reports/students:
+    get:
+      operationId: getStudentsReport
+      tags: [reports]
+      parameters:
+        - name: term
+          in: query
+          schema:
+            type: string
+        - name: schoolCategory
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Students report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentsReport"
+
+  /reports/payments:
+    get:
+      operationId: getPaymentsReport
+      tags: [reports]
+      parameters:
+        - name: term
+          in: query
+          schema:
+            type: string
+        - name: sponsorId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payments report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentsReport"
+
+  /reports/sponsor-contributions:
+    get:
+      operationId: getSponsorContributionsReport
+      tags: [reports]
+      parameters:
+        - name: term
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sponsor contributions report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SponsorContribution"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +889,947 @@ components:
       required:
         - status
 
+    LoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [secretary, admin, super_admin]
+        isActive:
+          type: boolean
+        lastLogin:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - username
+        - fullName
+        - role
+        - isActive
+        - createdAt
+
+    UserWithCredentials:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            generatedPassword:
+              type: string
+          required:
+            - generatedPassword
+
+    CreateUserBody:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [secretary, admin, super_admin]
+      required:
+        - fullName
+        - role
+
+    UpdateUserBody:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [secretary, admin, super_admin]
+        isActive:
+          type: boolean
+
+    School:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+          enum: [primary, secondary, higher_learning]
+        location:
+          type: string
+        contactPhone:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - category
+        - location
+        - createdAt
+
+    CreateSchoolBody:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          enum: [primary, secondary, higher_learning]
+        location:
+          type: string
+        contactPhone:
+          type: string
+        contactEmail:
+          type: string
+      required:
+        - name
+        - category
+        - location
+
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+        admissionNumber:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          enum: [male, female, other]
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        schoolId:
+          type: integer
+          nullable: true
+        schoolName:
+          type: string
+          nullable: true
+        schoolCategory:
+          type: string
+          nullable: true
+        course:
+          type: string
+          nullable: true
+        currentLevel:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, graduated]
+        sponsorshipStatus:
+          type: string
+          enum: [sponsored, partial, unsponsored]
+        totalFees:
+          type: number
+          nullable: true
+        paidAmount:
+          type: number
+          nullable: true
+        balance:
+          type: number
+          nullable: true
+        currentTerm:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - admissionNumber
+        - firstName
+        - lastName
+        - status
+        - sponsorshipStatus
+        - createdAt
+
+    StudentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Student"
+        - type: object
+          properties:
+            guardians:
+              type: array
+              items:
+                $ref: "#/components/schemas/Guardian"
+            sponsorships:
+              type: array
+              items:
+                $ref: "#/components/schemas/Sponsorship"
+            recentPayments:
+              type: array
+              items:
+                $ref: "#/components/schemas/Payment"
+            academicRecords:
+              type: array
+              items:
+                $ref: "#/components/schemas/AcademicRecord"
+
+    CreateStudentBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          enum: [male, female, other]
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        schoolId:
+          type: integer
+          nullable: true
+        course:
+          type: string
+          nullable: true
+        currentLevel:
+          type: string
+          nullable: true
+        currentTerm:
+          type: string
+          nullable: true
+        totalFees:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, graduated]
+        guardianName:
+          type: string
+          nullable: true
+        guardianRelationship:
+          type: string
+          nullable: true
+        guardianPhone:
+          type: string
+          nullable: true
+        guardianEmail:
+          type: string
+          nullable: true
+      required:
+        - firstName
+        - lastName
+
+    Guardian:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        name:
+          type: string
+        relationship:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+      required:
+        - id
+        - studentId
+        - name
+
+    AcademicRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        term:
+          type: string
+        year:
+          type: integer
+        subject:
+          type: string
+          nullable: true
+        grade:
+          type: string
+          nullable: true
+        gpa:
+          type: number
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+        reportCardUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - studentId
+        - term
+        - year
+        - createdAt
+
+    CreateAcademicRecordBody:
+      type: object
+      properties:
+        term:
+          type: string
+        year:
+          type: integer
+        subject:
+          type: string
+          nullable: true
+        grade:
+          type: string
+          nullable: true
+        gpa:
+          type: number
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+      required:
+        - term
+        - year
+
+    Sponsor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [individual, organization]
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        totalContributed:
+          type: number
+        activeStudents:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - type
+        - status
+        - totalContributed
+        - activeStudents
+        - createdAt
+
+    SponsorDetail:
+      allOf:
+        - $ref: "#/components/schemas/Sponsor"
+        - type: object
+          properties:
+            sponsorships:
+              type: array
+              items:
+                $ref: "#/components/schemas/Sponsorship"
+            recentPayments:
+              type: array
+              items:
+                $ref: "#/components/schemas/Payment"
+
+    CreateSponsorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [individual, organization]
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+      required:
+        - name
+        - type
+
+    Sponsorship:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        sponsorId:
+          type: integer
+        studentName:
+          type: string
+          nullable: true
+        sponsorName:
+          type: string
+          nullable: true
+        coverageType:
+          type: string
+          enum: [full, partial]
+        amount:
+          type: number
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, completed]
+        term:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - studentId
+        - sponsorId
+        - coverageType
+        - amount
+        - startDate
+        - status
+        - createdAt
+
+    CreateSponsorshipBody:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        sponsorId:
+          type: integer
+        coverageType:
+          type: string
+          enum: [full, partial]
+        amount:
+          type: number
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+        term:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, completed]
+      required:
+        - studentId
+        - sponsorId
+        - coverageType
+        - amount
+        - startDate
+
+    UpdateSponsorshipBody:
+      type: object
+      properties:
+        coverageType:
+          type: string
+          enum: [full, partial]
+        amount:
+          type: number
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, completed]
+        notes:
+          type: string
+          nullable: true
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        sponsorshipId:
+          type: integer
+          nullable: true
+        sponsorId:
+          type: integer
+          nullable: true
+        studentId:
+          type: integer
+          nullable: true
+        studentName:
+          type: string
+          nullable: true
+        sponsorName:
+          type: string
+          nullable: true
+        amount:
+          type: number
+        paymentDate:
+          type: string
+        paymentMethod:
+          type: string
+          enum: [mpesa, bank_transfer, cash, cheque, online]
+        referenceNumber:
+          type: string
+          nullable: true
+        purpose:
+          type: string
+          nullable: true
+        term:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - amount
+        - paymentDate
+        - paymentMethod
+        - createdAt
+
+    CreatePaymentBody:
+      type: object
+      properties:
+        sponsorshipId:
+          type: integer
+          nullable: true
+        sponsorId:
+          type: integer
+          nullable: true
+        studentId:
+          type: integer
+          nullable: true
+        amount:
+          type: number
+        paymentDate:
+          type: string
+        paymentMethod:
+          type: string
+          enum: [mpesa, bank_transfer, cash, cheque, online]
+        referenceNumber:
+          type: string
+          nullable: true
+        purpose:
+          type: string
+          nullable: true
+        term:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - amount
+        - paymentDate
+        - paymentMethod
+
+    Communication:
+      type: object
+      properties:
+        id:
+          type: integer
+        sentById:
+          type: integer
+          nullable: true
+        sentByName:
+          type: string
+          nullable: true
+        recipientType:
+          type: string
+          enum: [student, sponsor, guardian, all]
+        recipientId:
+          type: integer
+          nullable: true
+        recipientName:
+          type: string
+          nullable: true
+        channel:
+          type: string
+          enum: [email, sms, both]
+        subject:
+          type: string
+          nullable: true
+        message:
+          type: string
+        status:
+          type: string
+          enum: [sent, failed, pending]
+        sentAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - recipientType
+        - channel
+        - message
+        - status
+        - createdAt
+
+    SendCommunicationBody:
+      type: object
+      properties:
+        recipientType:
+          type: string
+          enum: [student, sponsor, guardian, all]
+        recipientId:
+          type: integer
+          nullable: true
+        channel:
+          type: string
+          enum: [email, sms, both]
+        subject:
+          type: string
+          nullable: true
+        message:
+          type: string
+      required:
+        - recipientType
+        - channel
+        - message
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+          nullable: true
+        username:
+          type: string
+          nullable: true
+        action:
+          type: string
+        entity:
+          type: string
+          nullable: true
+        entityId:
+          type: integer
+          nullable: true
+        details:
+          type: string
+          nullable: true
+        ipAddress:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - action
+        - createdAt
+
+    AuditLogList:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - logs
+        - total
+        - page
+        - limit
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalStudents:
+          type: integer
+        activeStudents:
+          type: integer
+        totalSponsors:
+          type: integer
+        activeSponsors:
+          type: integer
+        totalFundsReceived:
+          type: number
+        totalFundsSpent:
+          type: number
+        fundsAvailable:
+          type: number
+        pendingFees:
+          type: number
+        fullySponsored:
+          type: integer
+        partiallySponsored:
+          type: integer
+        unsponsored:
+          type: integer
+        currentTerm:
+          type: string
+          nullable: true
+      required:
+        - totalStudents
+        - activeStudents
+        - totalSponsors
+        - activeSponsors
+        - totalFundsReceived
+        - totalFundsSpent
+        - fundsAvailable
+        - pendingFees
+        - fullySponsored
+        - partiallySponsored
+        - unsponsored
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        entityType:
+          type: string
+          nullable: true
+        entityId:
+          type: integer
+          nullable: true
+        performedBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - description
+        - createdAt
+
+    FinancialOverview:
+      type: object
+      properties:
+        term:
+          type: string
+          nullable: true
+        totalReceived:
+          type: number
+        totalExpenses:
+          type: number
+        balance:
+          type: number
+        paymentsByMethod:
+          type: array
+          items:
+            type: object
+            properties:
+              method:
+                type: string
+              total:
+                type: number
+            required:
+              - method
+              - total
+        monthlyTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              received:
+                type: number
+            required:
+              - month
+              - received
+      required:
+        - totalReceived
+        - totalExpenses
+        - balance
+        - paymentsByMethod
+        - monthlyTrend
+
+    SponsorshipStats:
+      type: object
+      properties:
+        fullySponsored:
+          type: integer
+        partiallySponsored:
+          type: integer
+        unsponsored:
+          type: integer
+        activeSponsorships:
+          type: integer
+        completedSponsorships:
+          type: integer
+        schoolBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              school:
+                type: string
+              count:
+                type: integer
+            required:
+              - school
+              - count
+      required:
+        - fullySponsored
+        - partiallySponsored
+        - unsponsored
+        - activeSponsorships
+        - completedSponsorships
+        - schoolBreakdown
+
+    StudentsReport:
+      type: object
+      properties:
+        term:
+          type: string
+          nullable: true
+        totalStudents:
+          type: integer
+        bySchoolCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              count:
+                type: integer
+            required:
+              - category
+              - count
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/Student"
+      required:
+        - totalStudents
+        - bySchoolCategory
+        - students
+
+    PaymentsReport:
+      type: object
+      properties:
+        term:
+          type: string
+          nullable: true
+        totalAmount:
+          type: number
+        totalPayments:
+          type: integer
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+      required:
+        - totalAmount
+        - totalPayments
+        - payments
+
+    SponsorContribution:
+      type: object
+      properties:
+        sponsorId:
+          type: integer
+        sponsorName:
+          type: string
+        totalContributed:
+          type: number
+        paymentCount:
+          type: integer
+        studentsSponsored:
+          type: integer
+      required:
+        - sponsorId
+        - sponsorName
+        - totalContributed
+        - paymentCount
+        - studentsSponsored

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "IKODI Student Sponsorship Management System"
+version = "1.0.0"
+id = "artifacts/ikodi"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18487
+
+[services.development]
+run = "pnpm --filter @workspace/ikodi run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ikodi", "run", "build" ]
+publicDir = "artifacts/ikodi/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18487"
+BASE_PATH = "/"
