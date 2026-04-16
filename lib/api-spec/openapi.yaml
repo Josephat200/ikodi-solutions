@@ -105,7 +105,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [secretary, admin, super_admin]
+            enum: [admin, program_officer, finance_officer, sponsor_portal, viewer]
       responses:
         "200":
           description: List of users
@@ -194,7 +194,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [primary, secondary, higher_learning]
+            enum: [primary_school, high_school, college, university]
       responses:
         "200":
           description: List of schools
@@ -924,7 +924,7 @@ components:
           type: string
         role:
           type: string
-          enum: [secretary, admin, super_admin]
+          enum: [admin, program_officer, finance_officer, sponsor_portal, viewer]
         isActive:
           type: boolean
         lastLogin:
@@ -959,7 +959,7 @@ components:
           type: string
         role:
           type: string
-          enum: [secretary, admin, super_admin]
+          enum: [admin, program_officer, finance_officer, sponsor_portal, viewer]
       required:
         - fullName
         - role
@@ -973,7 +973,7 @@ components:
           type: string
         role:
           type: string
-          enum: [secretary, admin, super_admin]
+          enum: [admin, program_officer, finance_officer, sponsor_portal, viewer]
         isActive:
           type: boolean
 
@@ -986,7 +986,7 @@ components:
           type: string
         category:
           type: string
-          enum: [primary, secondary, higher_learning]
+          enum: [primary_school, high_school, college, university]
         location:
           type: string
         contactPhone:
@@ -1011,7 +1011,7 @@ components:
           type: string
         category:
           type: string
-          enum: [primary, secondary, higher_learning]
+          enum: [primary_school, high_school, college, university]
         location:
           type: string
         contactPhone:

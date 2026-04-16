@@ -60,7 +60,7 @@ export default function Reports() {
                     <th className="text-right py-2 px-3 font-semibold text-muted-foreground hidden lg:table-cell">Balance</th>
                   </tr></thead>
                   <tbody>
-                    {studentReport.students.slice(0, 20).map((s: any) => (
+                    {Array.isArray(studentReport?.students) && studentReport.students.slice(0, 20).map((s: any) => (
                       <tr key={s.id} className="border-b border-border/50">
                         <td className="py-2 px-3 font-mono text-xs text-muted-foreground">{s.admissionNumber}</td>
                         <td className="py-2 px-3 font-medium">{s.firstName} {s.lastName}</td>
@@ -96,7 +96,7 @@ export default function Reports() {
                     <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Amount</th>
                   </tr></thead>
                   <tbody>
-                    {paymentsReport.payments.slice(0, 20).map((p: any) => (
+                    {Array.isArray(paymentsReport?.payments) && paymentsReport.payments.slice(0, 20).map((p: any) => (
                       <tr key={p.id} className="border-b border-border/50">
                         <td className="py-2 px-3 text-muted-foreground">{formatDate(p.paymentDate)}</td>
                         <td className="py-2 px-3 font-medium">{p.sponsorName ?? "—"}</td>
@@ -116,12 +116,12 @@ export default function Reports() {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Heart className="h-4 w-4 text-primary" />Sponsor Contributions</CardTitle></CardHeader>
         <CardContent>
-          {sponsorReport && sponsorReport.length > 0 ? (
+          {Array.isArray(sponsorReport) && sponsorReport.length > 0 ? (
             <>
-              {sponsorReport.length >= 3 && (
+              {Array.isArray(sponsorReport) && sponsorReport.length >= 3 && (
                 <div className="mb-4">
                   <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={sponsorReport.slice(0, 8)}>
+                    <BarChart data={Array.isArray(sponsorReport) ? sponsorReport.slice(0, 8) : []}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="sponsorName" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
@@ -140,7 +140,7 @@ export default function Reports() {
                     <th className="text-right py-2 px-3 font-semibold text-muted-foreground hidden lg:table-cell">Students</th>
                   </tr></thead>
                   <tbody>
-                    {sponsorReport.map((s) => (
+                    {Array.isArray(sponsorReport) && sponsorReport.map((s) => (
                       <tr key={s.sponsorId} className="border-b border-border/50">
                         <td className="py-2 px-3 font-medium">{s.sponsorName}</td>
                         <td className="py-2 px-3 text-right font-semibold text-primary">{formatCurrency(s.totalContributed)}</td>

@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Eye, Trash2, Users } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { canManageStudents, normalizeRole } from "@/lib/rbac";
 
 const sponsorshipBadge = (status: string) => {
   if (status === "sponsored") return <Badge className="bg-primary text-primary-foreground">Sponsored</Badge>;
@@ -20,12 +22,34 @@ const sponsorshipBadge = (status: string) => {
 };
 
 export default function Students() {
+  const { user } = useAuth();
+  const canEditStudents = canManageStudents(user?.role);
+  const canDeleteStudents = normalizeRole(user?.role) === "admin";
+
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [formError, setFormError] = useState<string>("");
   const [form, setForm] = useState({ firstName: "", lastName: "", gender: "", phone: "", email: "", schoolId: "", course: "", currentLevel: "", currentTerm: "", totalFees: "", guardianName: "", guardianPhone: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const validateForm = () => {
+    if (!form.firstName.trim()) {
+      setFormError("First name is required");
+      return false;
+    }
+    if (!form.lastName.trim()) {
+      setFormError("Last name is required");
+      return false;
+    }
+    if (form.totalFees && isNaN(parseFloat(form.totalFees))) {
+      setFormError("Total fees must be a valid number");
+      return false;
+    }
+    setFormError("");
+    return true;
+  };
 
   const params: any = {};
   if (search) params.search = search;
@@ -33,8 +57,46 @@ export default function Students() {
 
   const { data: students, isLoading } = useListStudents(params);
   const { data: schools } = useListSchools({});
-  const createStudent = useCreateStudent({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() }); setShowAdd(false); setForm({ firstName: "", lastName: "", gender: "", phone: "", email: "", schoolId: "", course: "", currentLevel: "", currentTerm: "", totalFees: "", guardianName: "", guardianPhone: "" }); toast({ title: "Student added successfully" }); } } });
-  const deleteStudent = useDeleteStudent({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() }); toast({ title: "Student deleted" }); } } });
+  const createStudent = useCreateStudent({
+    mutation: {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
+        setShowAdd(false);
+        setForm({ firstName: "", lastName: "", gender: "", phone: "", email: "", schoolId: "", course: "", currentLevel: "", currentTerm: "", totalFees: "", guardianName: "", guardianPhone: "" });
+        toast({
+          title: "✓ Student Added Successfully",
+          description: `${data.firstName} ${data.lastName} (${data.admissionNumber}) has been registered.`,
+        });
+      },
+      onError: (error: any) => {
+        const message = error?.response?.data?.error || error?.message || "Failed to add student";
+        toast({
+          title: "✗ Could not add student",
+          description: String(message),
+          variant: "destructive",
+        });
+      },
+    },
+  });
+  const deleteStudent = useDeleteStudent({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
+        toast({
+          title: "✓ Student Deleted",
+          description: "The student record has been removed.",
+        });
+      },
+      onError: (error: any) => {
+        const message = error?.response?.data?.error || error?.message || "Failed to delete student";
+        toast({
+          title: "✗ Could not delete student",
+          description: String(message),
+          variant: "destructive",
+        });
+      },
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -43,7 +105,7 @@ export default function Students() {
           <h1 className="text-2xl font-bold">Students</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage student records and enrollment</p>
         </div>
-        <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />Add Student</Button>
+        {canEditStudents && <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />Add Student</Button>}
       </div>
 
       <Card>
@@ -87,7 +149,7 @@ export default function Students() {
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map(s => (
+                  {Array.isArray(students) && students.map(s => (
                     <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{s.admissionNumber}</td>
                       <td className="py-3 px-4 font-medium">{s.firstName} {s.lastName}</td>
@@ -98,7 +160,7 @@ export default function Students() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <Link href={`/students/${s.id}`}><Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button></Link>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { if (confirm("Delete this student?")) deleteStudent.mutate({ id: s.id }); }}><Trash2 className="h-4 w-4" /></Button>
+                          {canDeleteStudents && <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { if (confirm("Delete this student?")) deleteStudent.mutate({ id: s.id }); }}><Trash2 className="h-4 w-4" /></Button>}
                         </div>
                       </td>
                     </tr>
@@ -110,17 +172,22 @@ export default function Students() {
         </CardContent>
       </Card>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd && canEditStudents} onOpenChange={(open) => { setShowAdd(open); if (!open) setFormError(""); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Add New Student</DialogTitle></DialogHeader>
+          {formError && (
+            <div className="bg-destructive/15 border border-destructive/30 text-destructive px-3 py-2 rounded-md text-sm">
+              {formError}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>First Name *</Label>
-              <Input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} placeholder="First name" />
+              <Input value={form.firstName} onChange={e => { setForm(f => ({ ...f, firstName: e.target.value })); setFormError(""); }} placeholder="First name" className={formError.includes("First name") ? "border-destructive" : ""} />
             </div>
             <div className="space-y-1.5">
               <Label>Last Name *</Label>
-              <Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Last name" />
+              <Input value={form.lastName} onChange={e => { setForm(f => ({ ...f, lastName: e.target.value })); setFormError(""); }} placeholder="Last name" className={formError.includes("Last name") ? "border-destructive" : ""} />
             </div>
             <div className="space-y-1.5">
               <Label>Gender</Label>
@@ -146,7 +213,7 @@ export default function Students() {
               <Select value={form.schoolId} onValueChange={v => setForm(f => ({ ...f, schoolId: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
                 <SelectContent>
-                  {schools?.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                  {Array.isArray(schools) && schools.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -164,7 +231,7 @@ export default function Students() {
             </div>
             <div className="space-y-1.5">
               <Label>Total Fees (KES)</Label>
-              <Input type="number" value={form.totalFees} onChange={e => setForm(f => ({ ...f, totalFees: e.target.value }))} placeholder="85000" />
+              <Input type="number" value={form.totalFees} onChange={e => { setForm(f => ({ ...f, totalFees: e.target.value })); setFormError(""); }} placeholder="85000" className={formError.includes("Total fees") ? "border-destructive" : ""} />
             </div>
             <div className="col-span-2 pt-2 border-t border-border">
               <p className="text-sm font-semibold mb-3">Guardian Information</p>
@@ -179,8 +246,12 @@ export default function Students() {
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button disabled={!form.firstName || !form.lastName || createStudent.isPending} onClick={() => createStudent.mutate({ data: { firstName: form.firstName, lastName: form.lastName, gender: form.gender as any || null, phone: form.phone || null, email: form.email || null, schoolId: form.schoolId ? parseInt(form.schoolId) : null, course: form.course || null, currentLevel: form.currentLevel || null, currentTerm: form.currentTerm || null, totalFees: form.totalFees ? parseFloat(form.totalFees) : null, guardianName: form.guardianName || null, guardianPhone: form.guardianPhone || null, status: "active" } })}>
+            <Button variant="outline" onClick={() => { setShowAdd(false); setFormError(""); }}>Cancel</Button>
+            <Button disabled={!form.firstName || !form.lastName || createStudent.isPending} onClick={() => { 
+              if (validateForm()) {
+                createStudent.mutate({ data: { firstName: form.firstName, lastName: form.lastName, gender: form.gender as any || null, phone: form.phone || null, email: form.email || null, schoolId: form.schoolId ? parseInt(form.schoolId) : null, course: form.course || null, currentLevel: form.currentLevel || null, currentTerm: form.currentTerm || null, totalFees: form.totalFees ? parseFloat(form.totalFees) : null, guardianName: form.guardianName || null, guardianPhone: form.guardianPhone || null, status: "active" } });
+              }
+            }}>
               {createStudent.isPending ? "Adding..." : "Add Student"}
             </Button>
           </DialogFooter>

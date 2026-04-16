@@ -1,11 +1,15 @@
 import { Router } from "express";
-import { db, studentsTable, sponsorsTable, paymentsTable, schoolsTable } from "@workspace/db";
+import { db, studentsTable, sponsorsTable, paymentsTable, schoolsTable, sponsorshipsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth } from "../lib/auth";
+import { isSponsorPortal, requireAuth, resolveSessionSponsorId } from "../lib/auth";
 
 const router = Router();
 
 router.get("/students", requireAuth, async (req, res) => {
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const { term, schoolCategory } = req.query;
   const rows = await db.select({ s: studentsTable, school: schoolsTable })
     .from(studentsTable)
@@ -13,6 +17,16 @@ router.get("/students", requireAuth, async (req, res) => {
   let filtered = rows;
   if (term) filtered = filtered.filter(r => r.s.currentTerm === term);
   if (schoolCategory) filtered = filtered.filter(r => r.school?.category === schoolCategory);
+  if (isSponsorPortal(req)) {
+    const sponsorId = await resolveSessionSponsorId(req);
+    if (!sponsorId) {
+      res.json({ term: term || null, totalStudents: 0, bySchoolCategory: [], students: [] });
+      return;
+    }
+    const links = await db.select().from(sponsorshipsTable).where(eq(sponsorshipsTable.sponsorId, sponsorId));
+    const studentIds = new Set(links.map((l) => l.studentId));
+    filtered = filtered.filter((r) => studentIds.has(r.s.id));
+  }
   const byCategory: Record<string, number> = {};
   for (const { school } of filtered) {
     const cat = school?.category || "unknown";
@@ -38,6 +52,10 @@ router.get("/students", requireAuth, async (req, res) => {
 });
 
 router.get("/payments", requireAuth, async (req, res) => {
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const { term, sponsorId } = req.query;
   const rows = await db.select({ p: paymentsTable, student: studentsTable, sponsor: sponsorsTable })
     .from(paymentsTable)
@@ -46,6 +64,10 @@ router.get("/payments", requireAuth, async (req, res) => {
   let filtered = rows;
   if (term) filtered = filtered.filter(r => r.p.term === term);
   if (sponsorId) filtered = filtered.filter(r => r.p.sponsorId === parseInt(sponsorId as string));
+  if (isSponsorPortal(req)) {
+    const ownSponsorId = await resolveSessionSponsorId(req);
+    filtered = ownSponsorId ? filtered.filter((r) => r.p.sponsorId === ownSponsorId) : [];
+  }
   const totalAmount = filtered.reduce((sum, r) => sum + Number(r.p.amount), 0);
   res.json({
     term: term || null,
@@ -62,8 +84,16 @@ router.get("/payments", requireAuth, async (req, res) => {
 });
 
 router.get("/sponsor-contributions", requireAuth, async (req, res) => {
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const { term } = req.query;
-  const sponsors = await db.select().from(sponsorsTable);
+  let sponsors = await db.select().from(sponsorsTable);
+  if (isSponsorPortal(req)) {
+    const ownSponsorId = await resolveSessionSponsorId(req);
+    sponsors = ownSponsorId ? sponsors.filter((s) => s.id === ownSponsorId) : [];
+  }
   const result = await Promise.all(sponsors.map(async sponsor => {
     const payments = await db.select().from(paymentsTable).where(eq(paymentsTable.sponsorId, sponsor.id));
     const filtered = term ? payments.filter(p => p.term === term) : payments;

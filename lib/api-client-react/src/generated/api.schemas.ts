@@ -17,9 +17,11 @@ export interface LoginBody {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const UserRole = {
-  secretary: "secretary",
   admin: "admin",
-  super_admin: "super_admin",
+  program_officer: "program_officer",
+  finance_officer: "finance_officer",
+  sponsor_portal: "sponsor_portal",
+  viewer: "viewer",
 } as const;
 
 export interface User {
@@ -46,9 +48,11 @@ export type CreateUserBodyRole =
   (typeof CreateUserBodyRole)[keyof typeof CreateUserBodyRole];
 
 export const CreateUserBodyRole = {
-  secretary: "secretary",
   admin: "admin",
-  super_admin: "super_admin",
+  program_officer: "program_officer",
+  finance_officer: "finance_officer",
+  sponsor_portal: "sponsor_portal",
+  viewer: "viewer",
 } as const;
 
 export interface CreateUserBody {
@@ -61,9 +65,11 @@ export type UpdateUserBodyRole =
   (typeof UpdateUserBodyRole)[keyof typeof UpdateUserBodyRole];
 
 export const UpdateUserBodyRole = {
-  secretary: "secretary",
   admin: "admin",
-  super_admin: "super_admin",
+  program_officer: "program_officer",
+  finance_officer: "finance_officer",
+  sponsor_portal: "sponsor_portal",
+  viewer: "viewer",
 } as const;
 
 export interface UpdateUserBody {
@@ -77,9 +83,10 @@ export type SchoolCategory =
   (typeof SchoolCategory)[keyof typeof SchoolCategory];
 
 export const SchoolCategory = {
-  primary: "primary",
-  secondary: "secondary",
-  higher_learning: "higher_learning",
+  primary_school: "primary_school",
+  high_school: "high_school",
+  college: "college",
+  university: "university",
 } as const;
 
 export interface School {
@@ -96,9 +103,10 @@ export type CreateSchoolBodyCategory =
   (typeof CreateSchoolBodyCategory)[keyof typeof CreateSchoolBodyCategory];
 
 export const CreateSchoolBodyCategory = {
-  primary: "primary",
-  secondary: "secondary",
-  higher_learning: "higher_learning",
+  primary_school: "primary_school",
+  high_school: "high_school",
+  college: "college",
+  university: "university",
 } as const;
 
 export interface CreateSchoolBody {
@@ -613,9 +621,11 @@ export type ListUsersParams = {
 export type ListUsersRole = (typeof ListUsersRole)[keyof typeof ListUsersRole];
 
 export const ListUsersRole = {
-  secretary: "secretary",
   admin: "admin",
-  super_admin: "super_admin",
+  program_officer: "program_officer",
+  finance_officer: "finance_officer",
+  sponsor_portal: "sponsor_portal",
+  viewer: "viewer",
 } as const;
 
 export type ListSchoolsParams = {
@@ -626,9 +636,10 @@ export type ListSchoolsCategory =
   (typeof ListSchoolsCategory)[keyof typeof ListSchoolsCategory];
 
 export const ListSchoolsCategory = {
-  primary: "primary",
-  secondary: "secondary",
-  higher_learning: "higher_learning",
+  primary_school: "primary_school",
+  high_school: "high_school",
+  college: "college",
+  university: "university",
 } as const;
 
 export type ListStudentsParams = {

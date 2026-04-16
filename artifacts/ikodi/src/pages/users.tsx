@@ -40,13 +40,14 @@ interface User {
   createdAt: string;
 }
 
-const EMPTY_FORM = { username: "", password: "", fullName: "", email: "", role: "secretary", isActive: true };
+const EMPTY_FORM = { username: "", password: "", fullName: "", email: "", role: "viewer", isActive: true };
 
 function cleanUsername(v: string) { return v.toLowerCase().split("").filter(c => c !== " ").join(""); }
 
 export default function UsersPage() {
   const { user: me } = useAuth();
-  if (me && me.role !== "super_admin") return <Redirect to="/" />;
+  const normalizedRole = me?.role;
+  if (normalizedRole && normalizedRole !== "admin") return <Redirect to="/" />;
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -55,7 +56,8 @@ export default function UsersPage() {
   const [resetTarget, setResetTarget] = useState<User | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [editForm, setEditForm] = useState({ username: "", fullName: "", email: "", role: "secretary", isActive: true });
+  const [autoGenerateUsername, setAutoGenerateUsername] = useState(true);
+  const [editForm, setEditForm] = useState({ username: "", fullName: "", email: "", role: "viewer", isActive: true });
   const [newPassword, setNewPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [generatedCred, setGeneratedCred] = useState<{ username: string; password: string } | null>(null);
@@ -72,12 +74,13 @@ export default function UsersPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setShowAdd(false);
-      if (data?.generatedPassword) {
-        setGeneratedCred({ username: data.username, password: data.generatedPassword });
+      if (data?.generatedPassword || data?.generatedUsername) {
+        setGeneratedCred({ username: data.username, password: data.generatedPassword ?? "(manually set)" });
       } else {
         toast({ title: "User created successfully" });
       }
       setForm({ ...EMPTY_FORM });
+      setAutoGenerateUsername(true);
     },
     onError: (e: Error) => toast({ title: "Failed to create user", description: e.message, variant: "destructive" }),
   });
@@ -118,9 +121,12 @@ export default function UsersPage() {
   });
 
   const roleBadge = (role: string) => {
-    if (role === "super_admin") return <Badge className="bg-purple-600 text-white text-xs">Super Admin</Badge>;
+    if (role === "program_officer") return <Badge className="bg-blue-600 text-white text-xs">Program Officer</Badge>;
+    if (role === "finance_officer") return <Badge className="bg-emerald-600 text-white text-xs">Finance Officer</Badge>;
+    if (role === "sponsor_portal") return <Badge className="bg-amber-600 text-white text-xs">Sponsor Portal</Badge>;
+    if (role === "viewer") return <Badge variant="outline" className="text-xs">Viewer</Badge>;
     if (role === "admin") return <Badge className="bg-primary text-primary-foreground text-xs">Admin</Badge>;
-    return <Badge variant="outline" className="text-xs">Secretary</Badge>;
+    return <Badge variant="outline" className="text-xs">Unknown</Badge>;
   };
 
   const copyToClipboard = (text: string) => {
@@ -148,7 +154,7 @@ export default function UsersPage() {
           { label: "Total Users", value: users.length, color: "text-foreground" },
           { label: "Active", value: users.filter(u => u.isActive).length, color: "text-primary" },
           { label: "Admins", value: users.filter(u => u.role === "admin").length, color: "text-blue-600" },
-          { label: "Super Admins", value: users.filter(u => u.role === "super_admin").length, color: "text-purple-600" },
+          { label: "Program Officers", value: users.filter(u => u.role === "program_officer").length, color: "text-indigo-600" },
         ].map(s => (
           <Card key={s.label}><CardContent className="p-4 text-center">
             <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -179,7 +185,7 @@ export default function UsersPage() {
                   <th className="py-3 px-4 text-right font-semibold text-muted-foreground">Actions</th>
                 </tr></thead>
                 <tbody>
-                  {users.map(u => (
+                  {Array.isArray(users) && users.map(u => (
                     <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-4 font-medium">{u.fullName}</td>
                       <td className="py-3 px-4 font-mono text-sm text-muted-foreground">{u.username}</td>
@@ -211,7 +217,21 @@ export default function UsersPage() {
           <DialogHeader><DialogTitle>Create User Account</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5"><Label>Full Name *</Label><Input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} placeholder="Jane Doe" /></div>
-            <div className="space-y-1.5"><Label>Username *</Label><Input value={form.username} onChange={e => setForm(f => ({ ...f, username: cleanUsername(e.target.value) }))} placeholder="janedoe" /></div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label>Username</Label>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input type="checkbox" checked={autoGenerateUsername} onChange={e => setAutoGenerateUsername(e.target.checked)} />
+                  Auto-generate
+                </label>
+              </div>
+              <Input
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: cleanUsername(e.target.value) }))}
+                placeholder="janedoe"
+                disabled={autoGenerateUsername}
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Password <span className="text-muted-foreground text-xs">(leave blank to auto-generate)</span></Label>
               <div className="relative">
@@ -227,16 +247,18 @@ export default function UsersPage() {
               <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="secretary">Secretary</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  <SelectItem value="program_officer">Program Officer</SelectItem>
+                  <SelectItem value="finance_officer">Finance Officer</SelectItem>
+                  <SelectItem value="sponsor_portal">Sponsor (Portal)</SelectItem>
+                  <SelectItem value="viewer">Viewer / Read-only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button disabled={!form.username || !form.fullName || createUser.isPending} onClick={() => createUser.mutate({ username: form.username, password: form.password || undefined, fullName: form.fullName, email: form.email || null, role: form.role })}>
+            <Button disabled={!form.fullName || (!autoGenerateUsername && !form.username) || createUser.isPending} onClick={() => createUser.mutate({ username: autoGenerateUsername ? undefined : form.username, password: form.password || undefined, fullName: form.fullName, email: form.email || null, role: form.role })}>
               {createUser.isPending ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>
@@ -275,9 +297,11 @@ export default function UsersPage() {
               <Select value={editForm.role} onValueChange={v => setEditForm(f => ({ ...f, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="secretary">Secretary</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  <SelectItem value="program_officer">Program Officer</SelectItem>
+                  <SelectItem value="finance_officer">Finance Officer</SelectItem>
+                  <SelectItem value="sponsor_portal">Sponsor (Portal)</SelectItem>
+                  <SelectItem value="viewer">Viewer / Read-only</SelectItem>
                 </SelectContent>
               </Select>
             </div>

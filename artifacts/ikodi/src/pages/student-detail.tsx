@@ -1,5 +1,5 @@
 import { useRoute, Link } from "wouter";
-import { useGetStudent, useGetStudentAcademicRecords, useAddAcademicRecord, getGetStudentAcademicRecordsQueryKey } from "@workspace/api-client-react";
+import { useGetStudent, useGetStudentAcademicRecords, useAddAcademicRecord, useUpdateStudent, useListSchools, getGetStudentAcademicRecordsQueryKey, getGetStudentQueryKey, getListStudentsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,21 +7,104 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { ArrowLeft, User, School, BookOpen, DollarSign, Plus } from "lucide-react";
+import { ArrowLeft, User, School, BookOpen, DollarSign, Plus, Pencil } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
+import { canManageStudents } from "@/lib/rbac";
 
 export default function StudentDetail() {
+  const { user } = useAuth();
+  const canEditAcademic = canManageStudents(user?.role);
+  const canEditStudent = canManageStudents(user?.role);
+
   const [, params] = useRoute("/students/:id");
   const id = parseInt(params?.id ?? "0");
   const [showAddRecord, setShowAddRecord] = useState(false);
+  const [showEditStudent, setShowEditStudent] = useState(false);
+  const [studentFormError, setStudentFormError] = useState("");
   const [recordForm, setRecordForm] = useState({ term: "", year: new Date().getFullYear().toString(), subject: "", grade: "", gpa: "", remarks: "" });
+  const [studentForm, setStudentForm] = useState({
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+    gender: "",
+    phone: "",
+    email: "",
+    schoolId: "",
+    course: "",
+    currentLevel: "",
+    currentTerm: "",
+    totalFees: "",
+    status: "active",
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: student, isLoading } = useGetStudent(id, { query: { enabled: !!id } });
+  const { data: student, isLoading } = useGetStudent(id, { query: { enabled: !!id } } as any);
+  const { data: schools } = useListSchools({});
   const addRecord = useAddAcademicRecord({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetStudentAcademicRecordsQueryKey(id) }); setShowAddRecord(false); toast({ title: "Academic record added" }); } } });
+  const updateStudent = useUpdateStudent({
+    mutation: {
+      onSuccess: (updated) => {
+        queryClient.invalidateQueries({ queryKey: getGetStudentQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
+        setShowEditStudent(false);
+        setStudentFormError("");
+        toast({
+          title: "Student updated successfully",
+          description: `${updated.firstName} ${updated.lastName} has been updated.`,
+        });
+      },
+      onError: (error: any) => {
+        const message = error?.response?.data?.error || error?.message || "Failed to update student";
+        toast({
+          title: "Could not update student",
+          description: String(message),
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const openEditStudent = () => {
+    if (!student) return;
+    setStudentForm({
+      firstName: student.firstName ?? "",
+      lastName: student.lastName ?? "",
+      dateOfBirth: student.dateOfBirth ? String(student.dateOfBirth).slice(0, 10) : "",
+      gender: student.gender ?? "",
+      phone: student.phone ?? "",
+      email: student.email ?? "",
+      schoolId: student.schoolId ? String(student.schoolId) : "",
+      course: student.course ?? "",
+      currentLevel: student.currentLevel ?? "",
+      currentTerm: student.currentTerm ?? "",
+      totalFees: student.totalFees != null ? String(student.totalFees) : "",
+      status: student.status ?? "active",
+    });
+    setStudentFormError("");
+    setShowEditStudent(true);
+  };
+
+  const validateStudentForm = () => {
+    if (!studentForm.firstName.trim()) {
+      setStudentFormError("First name is required");
+      return false;
+    }
+    if (!studentForm.lastName.trim()) {
+      setStudentFormError("Last name is required");
+      return false;
+    }
+    if (studentForm.totalFees && Number.isNaN(Number(studentForm.totalFees))) {
+      setStudentFormError("Total fees must be a valid number");
+      return false;
+    }
+    setStudentFormError("");
+    return true;
+  };
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   if (!student) return <div className="text-center py-20 text-muted-foreground">Student not found</div>;
@@ -38,6 +121,11 @@ export default function StudentDetail() {
           <h1 className="text-2xl font-bold">{student.firstName} {student.lastName}</h1>
           <p className="text-muted-foreground text-sm">{student.admissionNumber}</p>
         </div>
+        {canEditStudent && (
+          <Button variant="outline" className="ml-2" onClick={openEditStudent}>
+            <Pencil className="h-4 w-4 mr-2" />Edit Student
+          </Button>
+        )}
         <div className="ml-auto">
           {student.sponsorshipStatus === "sponsored" && <Badge className="bg-primary text-primary-foreground">Sponsored</Badge>}
           {student.sponsorshipStatus === "partial" && <Badge className="bg-orange-500 text-white">Partially Sponsored</Badge>}
@@ -98,7 +186,7 @@ export default function StudentDetail() {
           <CardHeader className="pb-3"><CardTitle className="text-base">Guardian Information</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(student as any).guardians.map((g: any) => (
+              {Array.isArray((student as any).guardians) && (student as any).guardians.map((g: any) => (
                 <div key={g.id} className="p-4 border border-border rounded-lg text-sm space-y-1">
                   <p className="font-semibold">{g.name}</p>
                   <p className="text-muted-foreground">{g.relationship ?? "—"}</p>
@@ -115,7 +203,7 @@ export default function StudentDetail() {
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" />Academic Records</CardTitle>
-          <Button size="sm" onClick={() => setShowAddRecord(true)}><Plus className="h-4 w-4 mr-1" />Add Record</Button>
+          {canEditAcademic && <Button size="sm" onClick={() => setShowAddRecord(true)}><Plus className="h-4 w-4 mr-1" />Add Record</Button>}
         </CardHeader>
         <CardContent>
           {(student as any).academicRecords?.length > 0 ? (
@@ -123,7 +211,7 @@ export default function StudentDetail() {
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-border bg-muted/40"><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Term</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Year</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Grade</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">GPA</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Remarks</th></tr></thead>
                 <tbody>
-                  {(student as any).academicRecords.map((r: any) => (
+                  {Array.isArray((student as any).academicRecords) && (student as any).academicRecords.map((r: any) => (
                     <tr key={r.id} className="border-b border-border/50">
                       <td className="py-2 px-3">{r.term}</td>
                       <td className="py-2 px-3">{r.year}</td>
@@ -148,7 +236,7 @@ export default function StudentDetail() {
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-border bg-muted/40"><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Date</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Amount</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Method</th><th className="text-left py-2 px-3 font-semibold text-muted-foreground">Reference</th></tr></thead>
                 <tbody>
-                  {(student as any).recentPayments.map((p: any) => (
+                  {Array.isArray((student as any).recentPayments) && (student as any).recentPayments.map((p: any) => (
                     <tr key={p.id} className="border-b border-border/50">
                       <td className="py-2 px-3">{formatDate(p.paymentDate)}</td>
                       <td className="py-2 px-3 font-medium text-green-700">{formatCurrency(p.amount)}</td>
@@ -163,7 +251,7 @@ export default function StudentDetail() {
         </Card>
       )}
 
-      <Dialog open={showAddRecord} onOpenChange={setShowAddRecord}>
+      <Dialog open={showAddRecord && canEditAcademic} onOpenChange={setShowAddRecord}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Academic Record</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
@@ -177,6 +265,117 @@ export default function StudentDetail() {
             <Button variant="outline" onClick={() => setShowAddRecord(false)}>Cancel</Button>
             <Button disabled={!recordForm.term || !recordForm.year || addRecord.isPending} onClick={() => addRecord.mutate({ id, data: { term: recordForm.term, year: parseInt(recordForm.year), grade: recordForm.grade || null, gpa: recordForm.gpa ? parseFloat(recordForm.gpa) : null, remarks: recordForm.remarks || null } })}>
               {addRecord.isPending ? "Saving..." : "Save Record"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditStudent && canEditStudent} onOpenChange={(open) => { setShowEditStudent(open); if (!open) setStudentFormError(""); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Student Details</DialogTitle></DialogHeader>
+          {studentFormError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/15 px-3 py-2 text-sm text-destructive">
+              {studentFormError}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>First Name *</Label>
+              <Input value={studentForm.firstName} onChange={(e) => { setStudentForm((f) => ({ ...f, firstName: e.target.value })); setStudentFormError(""); }} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Last Name *</Label>
+              <Input value={studentForm.lastName} onChange={(e) => { setStudentForm((f) => ({ ...f, lastName: e.target.value })); setStudentFormError(""); }} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Date of Birth</Label>
+              <Input type="date" value={studentForm.dateOfBirth} onChange={(e) => setStudentForm((f) => ({ ...f, dateOfBirth: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Gender</Label>
+              <Select value={studentForm.gender} onValueChange={(value) => setStudentForm((f) => ({ ...f, gender: value }))}>
+                <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <Input value={studentForm.phone} onChange={(e) => setStudentForm((f) => ({ ...f, phone: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={studentForm.email} onChange={(e) => setStudentForm((f) => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>School</Label>
+              <Select value={studentForm.schoolId} onValueChange={(value) => setStudentForm((f) => ({ ...f, schoolId: value }))}>
+                <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(schools) && schools.map((school) => (
+                    <SelectItem key={school.id} value={String(school.id)}>{school.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Current Level</Label>
+              <Input value={studentForm.currentLevel} onChange={(e) => setStudentForm((f) => ({ ...f, currentLevel: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Current Term</Label>
+              <Input value={studentForm.currentTerm} onChange={(e) => setStudentForm((f) => ({ ...f, currentTerm: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Course</Label>
+              <Input value={studentForm.course} onChange={(e) => setStudentForm((f) => ({ ...f, course: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Total Fees (KES)</Label>
+              <Input type="number" value={studentForm.totalFees} onChange={(e) => { setStudentForm((f) => ({ ...f, totalFees: e.target.value })); setStudentFormError(""); }} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={studentForm.status} onValueChange={(value) => setStudentForm((f) => ({ ...f, status: value }))}>
+                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="graduated">Graduated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowEditStudent(false); setStudentFormError(""); }}>Cancel</Button>
+            <Button disabled={!studentForm.firstName || !studentForm.lastName || updateStudent.isPending} onClick={() => {
+              if (!validateStudentForm()) return;
+              updateStudent.mutate({
+                id,
+                data: {
+                  firstName: studentForm.firstName,
+                  lastName: studentForm.lastName,
+                  dateOfBirth: studentForm.dateOfBirth || null,
+                  gender: (studentForm.gender || null) as any,
+                  phone: studentForm.phone || null,
+                  email: studentForm.email || null,
+                  schoolId: studentForm.schoolId ? Number(studentForm.schoolId) : null,
+                  course: studentForm.course || null,
+                  currentLevel: studentForm.currentLevel || null,
+                  currentTerm: studentForm.currentTerm || null,
+                  totalFees: studentForm.totalFees ? Number(studentForm.totalFees) : null,
+                  status: studentForm.status as any,
+                  guardianName: null,
+                  guardianRelationship: null,
+                  guardianPhone: null,
+                  guardianEmail: null,
+                },
+              });
+            }}>
+              {updateStudent.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

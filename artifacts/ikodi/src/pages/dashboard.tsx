@@ -105,7 +105,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {financial?.monthlyTrend && financial.monthlyTrend.length > 0 ? (
+            {financial?.monthlyTrend && Array.isArray(financial.monthlyTrend) && financial.monthlyTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={financial.monthlyTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -176,7 +176,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {activity && activity.length > 0 ? activity.map((item) => (
+              {Array.isArray(activity) && activity.length > 0 ? activity.map((item) => (
                 <div key={item.id} className="flex items-start gap-3 py-2 border-b border-border last:border-0">
                   <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
                   <div className="flex-1 min-w-0">

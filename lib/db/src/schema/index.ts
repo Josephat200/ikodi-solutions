@@ -6,3 +6,8 @@ export * from "./sponsorships";
 export * from "./payments";
 export * from "./communications";
 export * from "./audit_logs";
+export * from "./terms";
+export * from "./fee_schedules";
+export * from "./attendance";
+export { commPrefRecipientTypeEnum, preferredChannelEnum, communicationPreferencesTable, insertCommunicationPreferenceSchema, type InsertCommunicationPreference, type CommunicationPreference } from "./communication_preferences";
+export * from "./documents";

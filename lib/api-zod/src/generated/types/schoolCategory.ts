@@ -10,7 +10,8 @@ export type SchoolCategory =
   (typeof SchoolCategory)[keyof typeof SchoolCategory];
 
 export const SchoolCategory = {
-  primary: "primary",
-  secondary: "secondary",
-  higher_learning: "higher_learning",
+  primary_school: "primary_school",
+  high_school: "high_school",
+  college: "college",
+  university: "university",
 } as const;

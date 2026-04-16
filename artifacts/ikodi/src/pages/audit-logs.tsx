@@ -16,7 +16,8 @@ const actionColor: Record<string, string> = {
 
 export default function AuditLogs() {
   const { user } = useAuth();
-  if (user && user.role === "secretary") return <Redirect to="/" />;
+  const normalizedRole = user?.role;
+  if (normalizedRole && normalizedRole !== "admin") return <Redirect to="/" />;
 
   const { data: logs, isLoading } = useListAuditLogs({});
 
@@ -31,7 +32,7 @@ export default function AuditLogs() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
-          ) : !logs?.length ? (
+          ) : !Array.isArray(logs) || logs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground"><ShieldAlert className="h-10 w-10 mx-auto mb-3 opacity-40" /><p>No audit logs yet</p></div>
           ) : (
             <div className="overflow-x-auto">
@@ -45,7 +46,7 @@ export default function AuditLogs() {
                   <th className="text-left py-3 px-4 font-semibold text-muted-foreground hidden xl:table-cell">IP Address</th>
                 </tr></thead>
                 <tbody>
-                  {logs.map(l => (
+                  {Array.isArray(logs) && logs.map(l => (
                     <tr key={l.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-3 px-4 text-muted-foreground text-xs">{formatDate(l.createdAt)}</td>
                       <td className="py-3 px-4 font-medium">{l.performedBy ?? `User #${l.userId}`}</td>

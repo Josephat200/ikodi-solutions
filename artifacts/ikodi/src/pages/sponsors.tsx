@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListSponsors, useCreateSponsor, useDeleteSponsor, getListSponsorsQueryKey } from "@workspace/api-client-react";
+import { useListSponsors, useCreateSponsor, useDeleteSponsor, useUpdateSponsor, getListSponsorsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,20 +9,72 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Eye, Trash2, Heart } from "lucide-react";
+import { Plus, Search, Eye, Trash2, Heart, Pencil } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { canManageSponsors } from "@/lib/rbac";
 
 export default function Sponsors() {
+  const { user } = useAuth();
+  const canEditSponsors = canManageSponsors(user?.role);
+
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editingSponsorId, setEditingSponsorId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", type: "individual", email: "", phone: "", address: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: sponsors, isLoading } = useListSponsors({ search: search || undefined });
-  const createSponsor = useCreateSponsor({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSponsorsQueryKey() }); setShowAdd(false); setForm({ name: "", type: "individual", email: "", phone: "", address: "" }); toast({ title: "Sponsor added successfully" }); } } });
-  const deleteSponsor = useDeleteSponsor({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSponsorsQueryKey() }); toast({ title: "Sponsor removed" }); } } });
+  const createSponsor = useCreateSponsor({ mutation: {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: getListSponsorsQueryKey() });
+      setShowAdd(false);
+      setForm({ name: "", type: "individual", email: "", phone: "", address: "" });
+      toast({ title: "Sponsor added successfully", description: `${data.name} was created.` });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || error?.message || "Failed to add sponsor";
+      toast({ title: "Could not add sponsor", description: String(message), variant: "destructive" });
+    },
+  } });
+  const deleteSponsor = useDeleteSponsor({ mutation: {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListSponsorsQueryKey() });
+      toast({ title: "Sponsor removed" });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || error?.message || "Failed to delete sponsor";
+      toast({ title: "Could not delete sponsor", description: String(message), variant: "destructive" });
+    },
+  } });
+  const updateSponsor = useUpdateSponsor({ mutation: {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListSponsorsQueryKey() });
+      setShowEdit(false);
+      setEditingSponsorId(null);
+      setForm({ name: "", type: "individual", email: "", phone: "", address: "" });
+      toast({ title: "Sponsor updated" });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || error?.message || "Failed to update sponsor";
+      toast({ title: "Could not update sponsor", description: String(message), variant: "destructive" });
+    },
+  } });
+
+  const openEditDialog = (sponsor: any) => {
+    setEditingSponsorId(sponsor.id);
+    setForm({
+      name: sponsor.name ?? "",
+      type: sponsor.type ?? "individual",
+      email: sponsor.email ?? "",
+      phone: sponsor.phone ?? "",
+      address: sponsor.address ?? "",
+    });
+    setShowEdit(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -31,7 +83,7 @@ export default function Sponsors() {
           <h1 className="text-2xl font-bold">Sponsors</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage sponsor and donor records</p>
         </div>
-        <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />Add Sponsor</Button>
+        {canEditSponsors && <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />Add Sponsor</Button>}
       </div>
 
       <Card>
@@ -59,7 +111,7 @@ export default function Sponsors() {
                   <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Actions</th>
                 </tr></thead>
                 <tbody>
-                  {sponsors.map(s => (
+                  {Array.isArray(sponsors) && sponsors.map(s => (
                     <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-4 font-medium">{s.name}</td>
                       <td className="py-3 px-4"><Badge variant="outline" className="capitalize">{s.type}</Badge></td>
@@ -70,7 +122,8 @@ export default function Sponsors() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <Link href={`/sponsors/${s.id}`}><Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button></Link>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { if (confirm("Remove this sponsor?")) deleteSponsor.mutate({ id: s.id }); }}><Trash2 className="h-4 w-4" /></Button>
+                          {canEditSponsors && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(s)}><Pencil className="h-4 w-4" /></Button>}
+                          {canEditSponsors && <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { if (confirm("Remove this sponsor?")) deleteSponsor.mutate({ id: s.id }); }}><Trash2 className="h-4 w-4" /></Button>}
                         </div>
                       </td>
                     </tr>
@@ -82,7 +135,7 @@ export default function Sponsors() {
         </CardContent>
       </Card>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd && canEditSponsors} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add New Sponsor</DialogTitle></DialogHeader>
           <div className="space-y-4">
@@ -102,6 +155,43 @@ export default function Sponsors() {
             <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
             <Button disabled={!form.name || createSponsor.isPending} onClick={() => createSponsor.mutate({ data: { name: form.name, type: form.type as any, email: form.email || null, phone: form.phone || null, address: form.address || null } })}>
               {createSponsor.isPending ? "Adding..." : "Add Sponsor"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEdit && canEditSponsors} onOpenChange={setShowEdit}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Sponsor</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5"><Label>Name *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Sponsor name" /></div>
+            <div className="space-y-1.5">
+              <Label>Type *</Label>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="individual">Individual</SelectItem><SelectItem value="organization">Organization</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Email</Label><Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" /></div>
+            <div className="space-y-1.5"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+254..." /></div>
+            <div className="space-y-1.5"><Label>Address</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="City, Region" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
+            <Button
+              disabled={!editingSponsorId || !form.name || updateSponsor.isPending}
+              onClick={() => updateSponsor.mutate({
+                id: editingSponsorId!,
+                data: {
+                  name: form.name,
+                  type: form.type as any,
+                  email: form.email || null,
+                  phone: form.phone || null,
+                  address: form.address || null,
+                },
+              })}
+            >
+              {updateSponsor.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

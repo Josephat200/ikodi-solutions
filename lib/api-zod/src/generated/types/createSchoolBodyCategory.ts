@@ -10,7 +10,8 @@ export type CreateSchoolBodyCategory =
   (typeof CreateSchoolBodyCategory)[keyof typeof CreateSchoolBodyCategory];
 
 export const CreateSchoolBodyCategory = {
-  primary: "primary",
-  secondary: "secondary",
-  higher_learning: "higher_learning",
+  primary_school: "primary_school",
+  high_school: "high_school",
+  college: "college",
+  university: "university",
 } as const;

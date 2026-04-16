@@ -9,7 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export default function SponsorDetail() {
   const [, params] = useRoute("/sponsors/:id");
   const id = parseInt(params?.id ?? "0");
-  const { data: sponsor, isLoading } = useGetSponsor(id, { query: { enabled: !!id } });
+  const { data: sponsor, isLoading } = useGetSponsor(id, { query: { enabled: !!id } } as any);
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   if (!sponsor) return <div className="text-center py-20 text-muted-foreground">Sponsor not found</div>;
@@ -38,7 +38,7 @@ export default function SponsorDetail() {
           <CardContent>
             {(sponsor as any).sponsorships?.length > 0 ? (
               <div className="space-y-2">
-                {(sponsor as any).sponsorships.map((sp: any) => (
+                {Array.isArray((sponsor as any).sponsorships) && (sponsor as any).sponsorships.map((sp: any) => (
                   <div key={sp.id} className="p-3 border border-border rounded-lg flex justify-between items-center">
                     <div>
                       <p className="font-medium text-sm">{sp.studentName ?? `Student #${sp.studentId}`}</p>
@@ -61,7 +61,7 @@ export default function SponsorDetail() {
           <CardContent>
             {(sponsor as any).recentPayments?.length > 0 ? (
               <div className="space-y-2">
-                {(sponsor as any).recentPayments.slice(0, 8).map((p: any) => (
+                {Array.isArray((sponsor as any).recentPayments) && (sponsor as any).recentPayments.slice(0, 8).map((p: any) => (
                   <div key={p.id} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
                     <div>
                       <p className="text-sm font-medium">{formatDate(p.paymentDate)}</p>

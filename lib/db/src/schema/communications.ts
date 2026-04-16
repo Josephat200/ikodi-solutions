@@ -18,6 +18,8 @@ export const communicationsTable = pgTable("communications", {
   status: commStatusEnum("status").notNull().default("pending"),
   sentAt: timestamp("sent_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertCommunicationSchema = createInsertSchema(communicationsTable).omit({ id: true, createdAt: true });

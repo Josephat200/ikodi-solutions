@@ -2,7 +2,7 @@ import { pgTable, serial, text, boolean, timestamp, pgEnum } from "drizzle-orm/p
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const userRoleEnum = pgEnum("user_role", ["secretary", "admin", "super_admin"]);
+export const userRoleEnum = pgEnum("user_role", ["admin", "program_officer", "finance_officer", "sponsor_portal", "viewer"]);
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -10,11 +10,12 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   fullName: text("full_name").notNull(),
   email: text("email"),
-  role: userRoleEnum("role").notNull().default("secretary"),
+  role: userRoleEnum("role").notNull().default("viewer"),
   isActive: boolean("is_active").notNull().default(true),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });

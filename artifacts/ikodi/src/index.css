@@ -74,8 +74,8 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Warm off-white background */
-  --background: 42 30% 97%;
+  /* Soft aqua-ivory background */
+  --background: 176 32% 96%;
   --foreground: 210 30% 12%;
 
   --border: 210 20% 86%;
@@ -221,6 +221,11 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    background-image:
+      radial-gradient(1200px 700px at 15% -5%, hsl(174 58% 88% / 0.45), transparent 62%),
+      radial-gradient(900px 520px at 85% 0%, hsl(190 62% 90% / 0.40), transparent 58%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(42 26% 97%) 100%);
+    background-attachment: fixed;
   }
 }
 
@@ -228,6 +233,40 @@
   .no-print { display: none !important; }
   .print-only { display: block !important; }
   body { background: white; color: black; font-size: 12pt; }
+  .app-shell,
+  .app-shell-main,
+  .app-shell-content {
+    display: block !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+  .app-shell-content {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .card,
+  [class*="rounded"],
+  [class*="shadow"] {
+    box-shadow: none !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th,
+  td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  img,
+  svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   .page-header-print {
     display: block !important;
     text-align: center;
@@ -245,6 +284,123 @@
     padding-top: 8px;
     font-size: 10pt;
     color: #666;
+  }
+}
+
+.notifications-watermark {
+  position: relative;
+  isolation: isolate;
+}
+
+.notifications-watermark::before {
+  content: "IKODI I AM WITH YOU    IKODI I AM WITH YOU    IKODI I AM WITH YOU\A IKODI I AM WITH YOU    IKODI I AM WITH YOU    IKODI I AM WITH YOU\A IKODI I AM WITH YOU    IKODI I AM WITH YOU    IKODI I AM WITH YOU";
+  position: fixed;
+  left: -20%;
+  top: 15%;
+  transform: rotate(-28deg);
+  transform-origin: center;
+  white-space: pre;
+  line-height: 2.2;
+  letter-spacing: 0.18em;
+  font-size: clamp(22px, 3.8vw, 44px);
+  font-weight: 700;
+  color: hsl(var(--primary) / 0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.notifications-watermark > * {
+  position: relative;
+  z-index: 1;
+}
+
+.global-watermark {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.global-watermark-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.global-watermark-cover-stamp {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transform: rotate(-28deg);
+  opacity: 0.09;
+  color: hsl(var(--primary));
+}
+
+.global-watermark-cover-stamp img {
+  width: clamp(76px, 9vw, 120px);
+  height: clamp(76px, 9vw, 120px);
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.global-watermark-cover-stamp span {
+  font-size: clamp(28px, 5vw, 58px);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.global-watermark-pattern {
+  position: absolute;
+  inset: -25%;
+  transform: rotate(-28deg);
+  transform-origin: center;
+  opacity: 0.06;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 72px,
+    hsl(var(--primary)) 72px 76px,
+    transparent 76px 150px
+  );
+}
+
+.global-watermark-row {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  transform: rotate(-28deg);
+  opacity: 0.09;
+}
+
+.global-watermark-row img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.global-watermark-row span {
+  font-size: clamp(16px, 2vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: hsl(var(--primary));
+  white-space: nowrap;
+}
+
+.global-watermark-row.row-a { top: 24%; }
+.global-watermark-row.row-b { top: 50%; }
+.global-watermark-row.row-c { top: 76%; }
+
+@media print {
+  .global-watermark {
+    display: none !important;
   }
 }
 

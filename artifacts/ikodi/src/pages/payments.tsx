@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListPayments, useCreatePayment, useDeletePayment, getListPaymentsQueryKey, useListStudents, useListSponsors } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, CreditCard } from "lucide-react";
+import { Plus, Trash2, CreditCard, Pencil } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { canWritePayments } from "@/lib/rbac";
+
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const apiBaseUrl = configuredApiUrl
+  ? configuredApiUrl
+  : import.meta.env.DEV
+    ? "http://localhost:3001"
+    : "";
 
 const methodColors: Record<string, string> = {
   mpesa: "bg-green-100 text-green-800",
@@ -21,7 +30,12 @@ const methodColors: Record<string, string> = {
 };
 
 export default function Payments() {
+  const { user } = useAuth();
+  const canManagePayments = canWritePayments(user?.role);
+
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [form, setForm] = useState({ studentId: "", sponsorId: "", amount: "", paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "mpesa", referenceNumber: "", purpose: "", term: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -29,14 +43,72 @@ export default function Payments() {
   const { data: payments, isLoading } = useListPayments({});
   const { data: students } = useListStudents({});
   const { data: sponsors } = useListSponsors({});
-  const create = useCreatePayment({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() }); setShowAdd(false); toast({ title: "Payment recorded" }); } } });
-  const remove = useDeletePayment({ mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() }); toast({ title: "Payment deleted" }); } } });
+  const create = useCreatePayment({ mutation: {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+      setShowAdd(false);
+      toast({ title: "Payment recorded", description: `${formatCurrency(data.amount)} has been saved.` });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || error?.message || "Failed to record payment";
+      toast({ title: "Could not record payment", description: String(message), variant: "destructive" });
+    },
+  } });
+  const remove = useDeletePayment({ mutation: {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+      toast({ title: "Payment deleted" });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || error?.message || "Failed to delete payment";
+      toast({ title: "Could not delete payment", description: String(message), variant: "destructive" });
+    },
+  } });
+  const update = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`${apiBaseUrl}/api/payments/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || "Failed to update payment");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+      setShowEdit(false);
+      setEditingPaymentId(null);
+      toast({ title: "Payment updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Could not update payment", description: String(error?.message || "Failed to update payment"), variant: "destructive" });
+    },
+  });
+
+  const openEditDialog = (payment: any) => {
+    setEditingPaymentId(payment.id);
+    setForm({
+      studentId: payment.studentId ? String(payment.studentId) : "",
+      sponsorId: payment.sponsorId ? String(payment.sponsorId) : "",
+      amount: String(payment.amount ?? ""),
+      paymentDate: payment.paymentDate ?? new Date().toISOString().split("T")[0],
+      paymentMethod: payment.paymentMethod ?? "mpesa",
+      referenceNumber: payment.referenceNumber ?? "",
+      purpose: payment.purpose ?? "",
+      term: payment.term ?? "",
+    });
+    setShowEdit(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Payments</h1><p className="text-muted-foreground text-sm mt-1">Payment ledger and financial records</p></div>
-        <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />Record Payment</Button>
+        {canManagePayments && <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />Record Payment</Button>}
       </div>
 
       <Card>
@@ -59,7 +131,7 @@ export default function Payments() {
                   <th className="py-3 px-4"></th>
                 </tr></thead>
                 <tbody>
-                  {payments.map(p => (
+                  {Array.isArray(payments) && payments.map(p => (
                     <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-3 px-4">{formatDate(p.paymentDate)}</td>
                       <td className="py-3 px-4 font-medium">{p.sponsorName ?? "—"}</td>
@@ -68,7 +140,14 @@ export default function Payments() {
                       <td className="py-3 px-4 hidden lg:table-cell"><span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${methodColors[p.paymentMethod] ?? "bg-muted text-muted-foreground"}`}>{p.paymentMethod.replace("_", " ")}</span></td>
                       <td className="py-3 px-4 hidden lg:table-cell font-mono text-xs text-muted-foreground">{p.referenceNumber ?? "—"}</td>
                       <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground">{p.term ?? "—"}</td>
-                      <td className="py-3 px-4"><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Delete this payment?")) remove.mutate({ id: p.id }); }}><Trash2 className="h-4 w-4" /></Button></td>
+                      <td className="py-3 px-4">
+                        {canManagePayments ? (
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(p)}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Delete this payment?")) remove.mutate({ id: p.id }); }}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -78,7 +157,7 @@ export default function Payments() {
         </CardContent>
       </Card>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd && canManagePayments} onOpenChange={setShowAdd}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
@@ -86,14 +165,14 @@ export default function Payments() {
               <Label>Sponsor</Label>
               <Select value={form.sponsorId} onValueChange={v => setForm(f => ({ ...f, sponsorId: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select sponsor" /></SelectTrigger>
-                <SelectContent>{sponsors?.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{Array.isArray(sponsors) && sponsors.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Student</Label>
               <Select value={form.studentId} onValueChange={v => setForm(f => ({ ...f, studentId: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
-                <SelectContent>{students?.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
+                <SelectContent>{Array.isArray(students) && students.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Amount (KES) *</Label><Input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="45000" /></div>
@@ -119,6 +198,67 @@ export default function Payments() {
             <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
             <Button disabled={!form.amount || !form.paymentDate || create.isPending} onClick={() => create.mutate({ data: { studentId: form.studentId ? parseInt(form.studentId) : null, sponsorId: form.sponsorId ? parseInt(form.sponsorId) : null, amount: parseFloat(form.amount), paymentDate: form.paymentDate, paymentMethod: form.paymentMethod as any, referenceNumber: form.referenceNumber || null, purpose: form.purpose || null, term: form.term || null } })}>
               {create.isPending ? "Saving..." : "Record Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEdit && canManagePayments} onOpenChange={setShowEdit}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Edit Payment</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Sponsor</Label>
+              <Select value={form.sponsorId} onValueChange={v => setForm(f => ({ ...f, sponsorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select sponsor" /></SelectTrigger>
+                <SelectContent>{Array.isArray(sponsors) && sponsors.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Student</Label>
+              <Select value={form.studentId} onValueChange={v => setForm(f => ({ ...f, studentId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
+                <SelectContent>{Array.isArray(students) && students.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Amount (KES) *</Label><Input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="45000" /></div>
+            <div className="space-y-1.5"><Label>Payment Date *</Label><Input type="date" value={form.paymentDate} onChange={e => setForm(f => ({ ...f, paymentDate: e.target.value }))} /></div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>Payment Method *</Label>
+              <Select value={form.paymentMethod} onValueChange={v => setForm(f => ({ ...f, paymentMethod: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Reference Number</Label><Input value={form.referenceNumber} onChange={e => setForm(f => ({ ...f, referenceNumber: e.target.value }))} placeholder="MPE-001-2026" /></div>
+            <div className="space-y-1.5"><Label>Term</Label><Input value={form.term} onChange={e => setForm(f => ({ ...f, term: e.target.value }))} placeholder="Term 1 2026" /></div>
+            <div className="col-span-2 space-y-1.5"><Label>Purpose</Label><Input value={form.purpose} onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} placeholder="School fees..." /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
+            <Button
+              disabled={!editingPaymentId || !form.amount || !form.paymentDate || update.isPending}
+              onClick={() => update.mutate({
+                id: editingPaymentId!,
+                data: {
+                  studentId: form.studentId ? parseInt(form.studentId) : null,
+                  sponsorId: form.sponsorId ? parseInt(form.sponsorId) : null,
+                  amount: parseFloat(form.amount),
+                  paymentDate: form.paymentDate,
+                  paymentMethod: form.paymentMethod,
+                  referenceNumber: form.referenceNumber || null,
+                  purpose: form.purpose || null,
+                  term: form.term || null,
+                },
+              })}
+            >
+              {update.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,29 +1,50 @@
 import { Router } from "express";
-import { db, studentsTable, sponsorsTable, sponsorshipsTable, paymentsTable, auditLogsTable, usersTable } from "@workspace/db";
+import { db, studentsTable, sponsorsTable, sponsorshipsTable, paymentsTable, auditLogsTable, usersTable, schoolsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { requireAuth } from "../lib/auth";
+import { isSponsorPortal, requireAuth, resolveSessionSponsorId } from "../lib/auth";
 
 const router = Router();
 
 router.get("/summary", requireAuth, async (req, res) => {
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const students = await db.select().from(studentsTable);
   const sponsors = await db.select().from(sponsorsTable);
-  const payments = await db.select().from(paymentsTable);
+  let payments = await db.select().from(paymentsTable);
 
-  const totalStudents = students.length;
-  const activeStudents = students.filter(s => s.status === "active").length;
-  const totalSponsors = sponsors.length;
-  const activeSponsors = sponsors.filter(s => s.status === "active").length;
+  let scopedStudents = students;
+  let scopedSponsors = sponsors;
+  if (isSponsorPortal(req)) {
+    const sponsorId = await resolveSessionSponsorId(req);
+    if (sponsorId) {
+      const links = await db.select().from(sponsorshipsTable).where(eq(sponsorshipsTable.sponsorId, sponsorId));
+      const studentIds = new Set(links.map((l) => l.studentId));
+      scopedStudents = students.filter((s) => studentIds.has(s.id));
+      scopedSponsors = sponsors.filter((s) => s.id === sponsorId);
+      payments = payments.filter((p) => p.sponsorId === sponsorId);
+    } else {
+      scopedStudents = [];
+      scopedSponsors = [];
+      payments = [];
+    }
+  }
+
+  const totalStudents = scopedStudents.length;
+  const activeStudents = scopedStudents.filter(s => s.status === "active").length;
+  const totalSponsors = scopedSponsors.length;
+  const activeSponsors = scopedSponsors.filter(s => s.status === "active").length;
   const totalFundsReceived = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const fullySponsored = students.filter(s => s.sponsorshipStatus === "sponsored").length;
-  const partiallySponsored = students.filter(s => s.sponsorshipStatus === "partial").length;
-  const unsponsored = students.filter(s => s.sponsorshipStatus === "unsponsored").length;
-  const pendingFees = students.reduce((sum, s) => {
+  const fullySponsored = scopedStudents.filter(s => s.sponsorshipStatus === "sponsored").length;
+  const partiallySponsored = scopedStudents.filter(s => s.sponsorshipStatus === "partial").length;
+  const unsponsored = scopedStudents.filter(s => s.sponsorshipStatus === "unsponsored").length;
+  const pendingFees = scopedStudents.reduce((sum, s) => {
     const fees = Number(s.totalFees || 0);
     const paid = Number(s.paidAmount || 0);
     return sum + Math.max(0, fees - paid);
   }, 0);
-  const terms = [...new Set(students.filter(s => s.currentTerm).map(s => s.currentTerm))];
+  const terms = [...new Set(scopedStudents.filter(s => s.currentTerm).map(s => s.currentTerm))];
   const currentTerm = terms.length > 0 ? terms[terms.length - 1] : null;
 
   res.json({
@@ -34,6 +55,10 @@ router.get("/summary", requireAuth, async (req, res) => {
 });
 
 router.get("/recent-activity", requireAuth, async (req, res) => {
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const logs = await db.select({ log: auditLogsTable, user: usersTable })
     .from(auditLogsTable)
     .leftJoin(usersTable, eq(auditLogsTable.userId, usersTable.id))
@@ -48,8 +73,16 @@ router.get("/recent-activity", requireAuth, async (req, res) => {
 });
 
 router.get("/financial-overview", requireAuth, async (req, res) => {
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const { term } = req.query;
-  const payments = await db.select().from(paymentsTable);
+  let payments = await db.select().from(paymentsTable);
+  if (isSponsorPortal(req)) {
+    const sponsorId = await resolveSessionSponsorId(req);
+    payments = sponsorId ? payments.filter((p) => p.sponsorId === sponsorId) : [];
+  }
   const filtered = term ? payments.filter(p => p.term === term) : payments;
   const totalReceived = filtered.reduce((sum, p) => sum + Number(p.amount), 0);
   const byMethod: Record<string, number> = {};
@@ -70,10 +103,21 @@ router.get("/financial-overview", requireAuth, async (req, res) => {
 });
 
 router.get("/sponsorship-stats", requireAuth, async (req, res) => {
-  const students = await db.select({ s: studentsTable, school: db.$with("school") }).from(studentsTable);
-  const allStudents = await db.select().from(studentsTable);
-  const sponsorships = await db.select().from(sponsorshipsTable);
-  const schools = await db.select().from(sponsorshipsTable);
+  if (isSponsorPortal(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const students = await db.select().from(studentsTable);
+  let allStudents = await db.select().from(studentsTable);
+  let sponsorships = await db.select().from(sponsorshipsTable);
+  const schools = await db.select().from(schoolsTable);
+
+  if (isSponsorPortal(req)) {
+    const sponsorId = await resolveSessionSponsorId(req);
+    sponsorships = sponsorId ? sponsorships.filter((s) => s.sponsorId === sponsorId) : [];
+    const studentIds = new Set(sponsorships.map((s) => s.studentId));
+    allStudents = allStudents.filter((s) => studentIds.has(s.id));
+  }
 
   const schoolRows = await db.query.studentsTable?.findMany?.() ?? [];
 

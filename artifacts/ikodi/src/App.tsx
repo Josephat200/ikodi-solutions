@@ -56,6 +56,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={Login} />
       <Route component={ProtectedRoutes} />
     </Switch>
   );

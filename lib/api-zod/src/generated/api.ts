@@ -28,7 +28,13 @@ export const LoginResponse = zod.object({
     username: zod.string(),
     fullName: zod.string(),
     email: zod.string().optional(),
-    role: zod.enum(["secretary", "admin", "super_admin"]),
+    role: zod.enum([
+      "admin",
+      "program_officer",
+      "finance_officer",
+      "sponsor_portal",
+      "viewer",
+    ]),
     isActive: zod.boolean(),
     lastLogin: zod.string().nullish(),
     createdAt: zod.string(),
@@ -44,7 +50,13 @@ export const GetCurrentUserResponse = zod.object({
   username: zod.string(),
   fullName: zod.string(),
   email: zod.string().optional(),
-  role: zod.enum(["secretary", "admin", "super_admin"]),
+  role: zod.enum([
+    "admin",
+    "program_officer",
+    "finance_officer",
+    "sponsor_portal",
+    "viewer",
+  ]),
   isActive: zod.boolean(),
   lastLogin: zod.string().nullish(),
   createdAt: zod.string(),
@@ -54,7 +66,15 @@ export const GetCurrentUserResponse = zod.object({
  * @summary List all system users
  */
 export const ListUsersQueryParams = zod.object({
-  role: zod.enum(["secretary", "admin", "super_admin"]).optional(),
+  role: zod
+    .enum([
+      "admin",
+      "program_officer",
+      "finance_officer",
+      "sponsor_portal",
+      "viewer",
+    ])
+    .optional(),
 });
 
 export const ListUsersResponseItem = zod.object({
@@ -62,7 +82,13 @@ export const ListUsersResponseItem = zod.object({
   username: zod.string(),
   fullName: zod.string(),
   email: zod.string().optional(),
-  role: zod.enum(["secretary", "admin", "super_admin"]),
+  role: zod.enum([
+    "admin",
+    "program_officer",
+    "finance_officer",
+    "sponsor_portal",
+    "viewer",
+  ]),
   isActive: zod.boolean(),
   lastLogin: zod.string().nullish(),
   createdAt: zod.string(),
@@ -75,7 +101,13 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem);
 export const CreateUserBody = zod.object({
   fullName: zod.string(),
   email: zod.string().optional(),
-  role: zod.enum(["secretary", "admin", "super_admin"]),
+  role: zod.enum([
+    "admin",
+    "program_officer",
+    "finance_officer",
+    "sponsor_portal",
+    "viewer",
+  ]),
 });
 
 export const GetUserParams = zod.object({
@@ -87,7 +119,13 @@ export const GetUserResponse = zod.object({
   username: zod.string(),
   fullName: zod.string(),
   email: zod.string().optional(),
-  role: zod.enum(["secretary", "admin", "super_admin"]),
+  role: zod.enum([
+    "admin",
+    "program_officer",
+    "finance_officer",
+    "sponsor_portal",
+    "viewer",
+  ]),
   isActive: zod.boolean(),
   lastLogin: zod.string().nullish(),
   createdAt: zod.string(),
@@ -100,7 +138,15 @@ export const UpdateUserParams = zod.object({
 export const UpdateUserBody = zod.object({
   fullName: zod.string().optional(),
   email: zod.string().optional(),
-  role: zod.enum(["secretary", "admin", "super_admin"]).optional(),
+  role: zod
+    .enum([
+      "admin",
+      "program_officer",
+      "finance_officer",
+      "sponsor_portal",
+      "viewer",
+    ])
+    .optional(),
   isActive: zod.boolean().optional(),
 });
 
@@ -109,7 +155,13 @@ export const UpdateUserResponse = zod.object({
   username: zod.string(),
   fullName: zod.string(),
   email: zod.string().optional(),
-  role: zod.enum(["secretary", "admin", "super_admin"]),
+  role: zod.enum([
+    "admin",
+    "program_officer",
+    "finance_officer",
+    "sponsor_portal",
+    "viewer",
+  ]),
   isActive: zod.boolean(),
   lastLogin: zod.string().nullish(),
   createdAt: zod.string(),
@@ -120,13 +172,20 @@ export const DeleteUserParams = zod.object({
 });
 
 export const ListSchoolsQueryParams = zod.object({
-  category: zod.enum(["primary", "secondary", "higher_learning"]).optional(),
+  category: zod
+    .enum(["primary_school", "high_school", "college", "university"])
+    .optional(),
 });
 
 export const ListSchoolsResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  category: zod.enum(["primary", "secondary", "higher_learning"]),
+  category: zod.enum([
+    "primary_school",
+    "high_school",
+    "college",
+    "university",
+  ]),
   location: zod.string(),
   contactPhone: zod.string().nullish(),
   contactEmail: zod.string().nullish(),
@@ -136,7 +195,12 @@ export const ListSchoolsResponse = zod.array(ListSchoolsResponseItem);
 
 export const CreateSchoolBody = zod.object({
   name: zod.string(),
-  category: zod.enum(["primary", "secondary", "higher_learning"]),
+  category: zod.enum([
+    "primary_school",
+    "high_school",
+    "college",
+    "university",
+  ]),
   location: zod.string(),
   contactPhone: zod.string().optional(),
   contactEmail: zod.string().optional(),
@@ -149,7 +213,12 @@ export const GetSchoolParams = zod.object({
 export const GetSchoolResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
-  category: zod.enum(["primary", "secondary", "higher_learning"]),
+  category: zod.enum([
+    "primary_school",
+    "high_school",
+    "college",
+    "university",
+  ]),
   location: zod.string(),
   contactPhone: zod.string().nullish(),
   contactEmail: zod.string().nullish(),
@@ -162,7 +231,12 @@ export const UpdateSchoolParams = zod.object({
 
 export const UpdateSchoolBody = zod.object({
   name: zod.string(),
-  category: zod.enum(["primary", "secondary", "higher_learning"]),
+  category: zod.enum([
+    "primary_school",
+    "high_school",
+    "college",
+    "university",
+  ]),
   location: zod.string(),
   contactPhone: zod.string().optional(),
   contactEmail: zod.string().optional(),
@@ -171,7 +245,12 @@ export const UpdateSchoolBody = zod.object({
 export const UpdateSchoolResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
-  category: zod.enum(["primary", "secondary", "higher_learning"]),
+  category: zod.enum([
+    "primary_school",
+    "high_school",
+    "college",
+    "university",
+  ]),
   location: zod.string(),
   contactPhone: zod.string().nullish(),
   contactEmail: zod.string().nullish(),

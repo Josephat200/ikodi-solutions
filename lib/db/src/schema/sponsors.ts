@@ -15,6 +15,7 @@ export const sponsorsTable = pgTable("sponsors", {
   status: sponsorStatusEnum("status").notNull().default("active"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertSponsorSchema = createInsertSchema(sponsorsTable).omit({ id: true, createdAt: true, updatedAt: true });

@@ -26,6 +26,7 @@ export const studentsTable = pgTable("students", {
   sponsorshipStatus: sponsorshipStatusEnum("sponsorship_status").notNull().default("unsponsored"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const guardiansTable = pgTable("guardians", {
@@ -36,6 +37,8 @@ export const guardiansTable = pgTable("guardians", {
   phone: text("phone"),
   email: text("email"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const academicRecordsTable = pgTable("academic_records", {
@@ -49,6 +52,8 @@ export const academicRecordsTable = pgTable("academic_records", {
   remarks: text("remarks"),
   reportCardUrl: text("report_card_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true, updatedAt: true });

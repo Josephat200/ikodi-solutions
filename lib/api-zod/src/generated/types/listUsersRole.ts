@@ -9,7 +9,9 @@
 export type ListUsersRole = (typeof ListUsersRole)[keyof typeof ListUsersRole];
 
 export const ListUsersRole = {
-  secretary: "secretary",
   admin: "admin",
-  super_admin: "super_admin",
+  program_officer: "program_officer",
+  finance_officer: "finance_officer",
+  sponsor_portal: "sponsor_portal",
+  viewer: "viewer",
 } as const;

@@ -10,19 +10,54 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const LOCAL_USER_STORAGE_KEY = "ikodi.localUser";
+
+function readLocalUser(): User | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LOCAL_USER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    return isValidUser(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistLocalUser(user: User | null) {
+  if (typeof window === "undefined") return;
+  if (!user) {
+    window.localStorage.removeItem(LOCAL_USER_STORAGE_KEY);
+    return;
+  }
+  window.localStorage.setItem(LOCAL_USER_STORAGE_KEY, JSON.stringify(user));
+}
+
+function isValidUser(value: unknown): value is User {
+  if (!value || typeof value !== "object") return false;
+  return "id" in value && "username" in value && "role" in value;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(() => readLocalUser());
   
   const { data: currentUser, isLoading, error } = useGetCurrentUser({
     query: {
       retry: false,
     }
-  });
+  } as any);
+
+  const setUser = (nextUser: User | null) => {
+    setUserState(nextUser);
+    persistLocalUser(nextUser);
+  };
 
   useEffect(() => {
-    if (currentUser) {
+    if (isValidUser(currentUser)) {
       setUser(currentUser);
-    } else if (error) {
+    } else if (currentUser === null && !readLocalUser()) {
+      setUser(null);
+    } else if (!currentUser && !error && !readLocalUser()) {
       setUser(null);
     }
   }, [currentUser, error]);
