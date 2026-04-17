@@ -35,6 +35,9 @@ node_modules
 npm-debug.log
 yarn-error.log
 testem.log
+/build.log
+/build-output.log
+*.log
 /typings
 
 # System Files
@@ -46,6 +49,12 @@ Thumbs.db
 .env.*
 !.env.example
 .local/
+uploads/
+artifacts/api-server/uploads/
+cookies*.txt
+ikodi_test_sms_cookies.txt
+scripts/SYSTEM_CREDENTIALS.txt
+artifacts/api-server/cookies_notify.txt
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md

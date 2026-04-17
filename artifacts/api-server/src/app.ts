@@ -11,10 +11,28 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 const isProduction = process.env.NODE_ENV === "production";
-const corsOrigins = (process.env.CORS_ORIGINS || "")
+const configuredCorsOrigins =
+  process.env.CORS_ORIGINS || process.env.RENDER_EXTERNAL_URL || "";
+const corsOrigins = configuredCorsOrigins
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const uploadsDir = process.env.UPLOADS_DIR?.trim()
+  ? path.resolve(process.env.UPLOADS_DIR)
+  : path.resolve(process.cwd(), "uploads");
+
+function matchesCorsOrigin(origin: string, pattern: string) {
+  if (origin === pattern) return true;
+
+  // Support wildcard patterns like https://*.vercel.app
+  if (pattern.includes("*")) {
+    const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, ".*");
+    const regex = new RegExp(`^${escaped}$`, "i");
+    return regex.test(origin);
+  }
+
+  return false;
+}
 
 if (isProduction && corsOrigins.length === 0) {
   throw new Error("CORS_ORIGINS must be explicitly configured in production");
@@ -65,13 +83,14 @@ app.use(
         callback(null, true);
         return;
       }
-      callback(null, corsOrigins.includes(origin));
+      callback(null, corsOrigins.some((pattern) => matchesCorsOrigin(origin, pattern)));
     },
     credentials: true,
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+app.use("/uploads", express.static(uploadsDir));
 
 const PgSession = connectPgSimple(session);
 

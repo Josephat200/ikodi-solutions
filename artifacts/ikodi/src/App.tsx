@@ -9,6 +9,7 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Students from "@/pages/students";
 import StudentDetail from "@/pages/student-detail";
+import StudentResultsPage from "@/pages/student-results";
 import Sponsors from "@/pages/sponsors";
 import SponsorDetail from "@/pages/sponsor-detail";
 import Sponsorships from "@/pages/sponsorships";
@@ -36,6 +37,7 @@ function ProtectedRoutes() {
         <Route path="/" component={Dashboard} />
         <Route path="/students" component={Students} />
         <Route path="/students/:id" component={StudentDetail} />
+        <Route path="/students/:id/results" component={StudentResultsPage} />
         <Route path="/sponsors" component={Sponsors} />
         <Route path="/sponsors/:id" component={SponsorDetail} />
         <Route path="/sponsorships" component={Sponsorships} />

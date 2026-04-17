@@ -10,59 +10,6 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getDefaultPathForRole } from "@/lib/rbac";
 
-const DEMO_USERS = [
-  {
-    aliases: ["admin", "admin@ikodi.local", "system.administrator@ikodi.local"],
-    password: "Admin@123456",
-    fullName: "System Administrator",
-    role: "admin" as const,
-  },
-  {
-    aliases: ["program.officer@ikodi.local", "program.officer1@ikodi.local"],
-    password: "Program@123456",
-    fullName: "Program Officer",
-    role: "program_officer" as const,
-  },
-  {
-    aliases: ["finance.officer@ikodi.local", "finance.officer2@ikodi.local"],
-    password: "Finance@123456",
-    fullName: "Finance Officer",
-    role: "finance_officer" as const,
-  },
-  {
-    aliases: ["viewer@ikodi.local", "read.only3@ikodi.local"],
-    password: "Viewer@123456",
-    fullName: "Read Only Viewer",
-    role: "viewer" as const,
-  },
-  {
-    aliases: ["sponsorships@krcs.org", "sponsor.portal4@ikodi.local"],
-    password: "Sponsor@123456",
-    fullName: "Sponsor Portal User",
-    role: "sponsor_portal" as const,
-  },
-] as const;
-
-function buildLocalUser(username: string) {
-  const normalizedUsername = username.trim().toLowerCase();
-  const account = DEMO_USERS.find((item) =>
-    item.aliases.some((alias) => alias.toLowerCase() === normalizedUsername),
-  );
-
-  if (!account) return null;
-
-  return {
-    id: account.role === "admin" ? 1 : account.role === "program_officer" ? 2 : account.role === "finance_officer" ? 3 : account.role === "viewer" ? 4 : 5,
-    username: account.aliases[0],
-    fullName: account.fullName,
-    email: account.aliases[0],
-    role: account.role,
-    isActive: true,
-    lastLogin: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  };
-}
-
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

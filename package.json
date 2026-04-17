@@ -15,7 +15,9 @@
     "api:dev": "dotenv -e .env -- pnpm -C artifacts/api-server run dev",
     "web:dev": "dotenv -e .env -- pnpm -C artifacts/ikodi run dev",
     "render:build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "render:start": "pnpm -C artifacts/api-server run start",
+    "render:start": "node artifacts/api-server/dist/index.mjs",
+    "check:deploy": "pnpm -C scripts run check:deploy",
+    "check:deploy:render": "pnpm -C scripts run check:deploy -- --strict",
     "test": "pnpm -C artifacts/api-server run test",
     "test:ui": "pnpm -C artifacts/api-server run test:ui",
     "test:coverage": "pnpm -C artifacts/api-server run test:coverage"

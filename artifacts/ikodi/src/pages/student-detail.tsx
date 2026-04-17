@@ -9,11 +9,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { ArrowLeft, User, School, BookOpen, DollarSign, Plus, Pencil } from "lucide-react";
+import { ArrowLeft, User, School, BookOpen, DollarSign, Plus, Pencil, Upload, ExternalLink, FileText } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { canManageStudents } from "@/lib/rbac";
+
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const apiBaseUrl = configuredApiUrl || (import.meta.env.DEV ? "http://localhost:3001" : "");
+
+function resolveApiPath(pathName: string) {
+  return `${apiBaseUrl}${pathName}`;
+}
+
+function formatFileSize(bytes?: number | null) {
+  if (!bytes || bytes <= 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function StudentDetail() {
   const { user } = useAuth();
@@ -24,6 +38,12 @@ export default function StudentDetail() {
   const id = parseInt(params?.id ?? "0");
   const [showAddRecord, setShowAddRecord] = useState(false);
   const [showEditStudent, setShowEditStudent] = useState(false);
+  const [showUploadResult, setShowUploadResult] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState("");
+  const [isUploadingResult, setIsUploadingResult] = useState(false);
   const [studentFormError, setStudentFormError] = useState("");
   const [recordForm, setRecordForm] = useState({ term: "", year: new Date().getFullYear().toString(), subject: "", grade: "", gpa: "", remarks: "" });
   const [studentForm, setStudentForm] = useState({
@@ -68,6 +88,80 @@ export default function StudentDetail() {
       },
     },
   });
+
+  const openUploadResult = () => {
+    setUploadTitle("");
+    setUploadDescription("");
+    setUploadFile(null);
+    setUploadError("");
+    setShowUploadResult(true);
+  };
+
+  const uploadStudentResult = async () => {
+    if (!uploadFile) {
+      setUploadError("Please choose a file to upload");
+      return;
+    }
+
+    const allowedTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+    if (!allowedTypes.has(uploadFile.type)) {
+      setUploadError("Only PDF, JPG, PNG, and WEBP files are allowed");
+      return;
+    }
+
+    if (uploadFile.size > 10 * 1024 * 1024) {
+      setUploadError("File size must be 10MB or less");
+      return;
+    }
+
+    setUploadError("");
+    setIsUploadingResult(true);
+
+    try {
+      const fileContentBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result !== "string") {
+            reject(new Error("Failed to read file"));
+            return;
+          }
+          const commaIndex = result.indexOf(",");
+          resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+        };
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(uploadFile);
+      });
+
+      const response = await fetch(resolveApiPath(`/api/students/${id}/results`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: uploadTitle.trim() || uploadFile.name,
+          description: uploadDescription.trim() || null,
+          fileName: uploadFile.name,
+          mimeType: uploadFile.type,
+          fileContentBase64,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to upload result");
+      }
+
+      queryClient.invalidateQueries({ queryKey: getGetStudentQueryKey(id) });
+      setShowUploadResult(false);
+      toast({ title: "Result uploaded", description: "Student result file uploaded successfully." });
+    } catch (error: any) {
+      setUploadError(String(error?.message || "Failed to upload result"));
+    } finally {
+      setIsUploadingResult(false);
+    }
+  };
 
   const openEditStudent = () => {
     if (!student) return;
@@ -126,6 +220,11 @@ export default function StudentDetail() {
             <Pencil className="h-4 w-4 mr-2" />Edit Student
           </Button>
         )}
+        <Link href={`/students/${id}/results`}>
+          <Button variant="outline" className="ml-2">
+            <FileText className="h-4 w-4 mr-2" />Results Page
+          </Button>
+        </Link>
         <div className="ml-auto">
           {student.sponsorshipStatus === "sponsored" && <Badge className="bg-primary text-primary-foreground">Sponsored</Badge>}
           {student.sponsorshipStatus === "partial" && <Badge className="bg-orange-500 text-white">Partially Sponsored</Badge>}
@@ -224,6 +323,37 @@ export default function StudentDetail() {
               </table>
             </div>
           ) : <p className="text-muted-foreground text-sm">No academic records yet</p>}
+        </CardContent>
+      </Card>
+
+      {/* Results Documents */}
+      <Card>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4 text-primary" />Results Documents</CardTitle>
+          {canEditAcademic && <Button size="sm" onClick={openUploadResult}><Upload className="h-4 w-4 mr-1" />Upload Result</Button>}
+        </CardHeader>
+        <CardContent>
+          {Array.isArray((student as any).resultDocuments) && (student as any).resultDocuments.length > 0 ? (
+            <div className="space-y-3">
+              {(student as any).resultDocuments.map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{doc.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{doc.description || "No description"}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(doc.createdAt)} • {formatFileSize(doc.fileSize)}</p>
+                  </div>
+                  <a
+                    href={resolveApiPath(doc.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    Open <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-muted-foreground text-sm">No uploaded result documents yet</p>}
         </CardContent>
       </Card>
 
@@ -376,6 +506,49 @@ export default function StudentDetail() {
               });
             }}>
               {updateStudent.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showUploadResult && canEditAcademic} onOpenChange={(open) => { setShowUploadResult(open); if (!open) setUploadError(""); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Upload Student Result</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            {uploadError && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {uploadError}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label>Title</Label>
+              <Input
+                value={uploadTitle}
+                onChange={(e) => setUploadTitle(e.target.value)}
+                placeholder="Term 1 2026 Report Card"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description</Label>
+              <Input
+                value={uploadDescription}
+                onChange={(e) => setUploadDescription(e.target.value)}
+                placeholder="Optional notes"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>File (PDF, JPG, PNG, WEBP, max 10MB)</Label>
+              <Input
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUploadResult(false)}>Cancel</Button>
+            <Button disabled={!uploadFile || isUploadingResult} onClick={uploadStudentResult}>
+              {isUploadingResult ? "Uploading..." : "Upload"}
             </Button>
           </DialogFooter>
         </DialogContent>

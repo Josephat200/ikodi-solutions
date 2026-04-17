@@ -239,6 +239,8 @@ pnpm run dev               # Dev mode (monorepo)
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployments guides:
 
+- Quick release checklist: [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)
+
 1. **Docker Compose** (Recommended - easiest)
 2. **Railway** (Good for Replit users)
 3. **Vercel + Railway** (Frontend + Backend split)

@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "installCommand": "corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --dir artifacts/ikodi build",
+  "outputDirectory": "artifacts/ikodi/dist/public",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

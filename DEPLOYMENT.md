@@ -147,27 +147,24 @@ TWILIO_ACCOUNT_SID=your_sid
 Best for separating frontend and backend:
 
 #### Frontend on Vercel
-1. Create `vercel.json`:
-```json
-{
-  "buildCommand": "cd artifacts/ikodi && pnpm install && pnpm run build",
-  "outputDirectory": "artifacts/ikodi/dist"
-}
+1. Use the existing `vercel.json` at project root.
+2. In Vercel project settings, set Root Directory to repository root.
+3. Add environment variable:
 ```
-
-2. Deploy to Vercel:
+VITE_API_URL=https://your-backend-domain
+```
+4. Deploy to production:
 ```bash
 vercel deploy --prod
 ```
 
-3. Set environment variable:
+#### Backend on Render (recommended)
+- Use `render.yaml` blueprint in this repository.
+- Set `CORS_ORIGINS` in Render to include your Vercel domain(s), e.g.:
 ```
-VITE_API_URL=https://your-api.railway.app
+https://your-frontend.vercel.app,https://*.vercel.app
 ```
-
-#### Backend on Railway
-- Use Option 2 steps above
-- Provide Railway API URL to Vercel frontend
+- Ensure `UPLOADS_DIR=/opt/render/project/src/uploads` is set.
 
 ---
 
