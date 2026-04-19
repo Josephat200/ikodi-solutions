@@ -4,11 +4,11 @@
 
 ### 1. ✅ Database Configuration
 - [x] Created `.env.example` with all required environment variables
-- [x] Configured Supabase PostgreSQL connection
+- [x] Configured PostgreSQL connection
 - [x] Set up Drizzle ORM with PostgreSQL dialect
 - [x] Schema is ready for migrations
 
-**Next Step:** Create Supabase account and add `DATABASE_URL` to `.env`
+**Next Step:** Provision PostgreSQL for development or production and add `DATABASE_URL` to `.env`
 
 ### 2. ✅ Database Seeding
 - [x] Created comprehensive seed script at `scripts/src/seed.ts`
@@ -55,15 +55,15 @@
 
 ### Minute 1: Configure Database
 ```bash
-# 1. Create Supabase account at https://supabase.com
-# 2. Create new PostgreSQL project (free tier OK)
-# 3. Copy connection string
+# 1. Start the local PostgreSQL service
+pnpm run db:up
 
-# 4. Create .env file
+# 2. Copy the local connection string from .env.example or docker-compose.yml
+
+# 3. Create .env file
 cp .env.example .env
 
-# 5. Edit .env and add:
-# DATABASE_URL=postgresql://...your_supabase_url...
+# 4. Edit .env and ensure DATABASE_URL points to your PostgreSQL instance
 ```
 
 ### Minute 2-5: Run Migrations & Seed
@@ -229,7 +229,7 @@ pnpm run dev               # Dev mode (monorepo)
 - **Built with:** React 19, Vite, TypeScript, TailwindCSS, Radix UI
 
 ### Database
-- **Type:** PostgreSQL (Supabase)
+- **Type:** PostgreSQL (local in development, managed in production)
 - **Tables:** 8 main tables + audit logs
 - **Migrations:** Drizzle Kit
 
@@ -241,17 +241,16 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployments guides:
 
 - Quick release checklist: [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)
 
-1. **Docker Compose** (Recommended - easiest)
-2. **Railway** (Good for Replit users)
-3. **Vercel + Railway** (Frontend + Backend split)
-4. **Traditional VPS** (AWS EC2, DigitalOcean, Linode)
+1. **Render** (Recommended - one service with managed PostgreSQL)
+2. **Docker Compose** (Local/container-based alternative)
+3. **Traditional VPS** (AWS EC2, DigitalOcean, Linode)
 
 ---
 
 ## 🔐 Environment Variables
 
 **Required:**
-- `DATABASE_URL` - Supabase PostgreSQL connection
+- `DATABASE_URL` - PostgreSQL connection string
 - `SESSION_SECRET` - Session encryption key (change in production!)
 
 **Optional but Recommended:**
@@ -269,7 +268,7 @@ See [.env.example](./.env.example) for all options.
 
 ### Local Development
 - [ ] `pnpm install` completes without errors
-- [ ] `DATABASE_URL` configured to Supabase
+- [ ] `DATABASE_URL` configured to the local PostgreSQL instance
 - [ ] `pnpm run seed` populates test data (20+ students, 10+ sponsors)
 - [ ] Backend starts: `pnpm -C artifacts/api-server run dev`
 - [ ] Frontend starts: `pnpm -C artifacts/ikodi run dev`
@@ -294,7 +293,7 @@ See [.env.example](./.env.example) for all options.
 ## 🆘 Common Issues
 
 ### `DATABASE_URL not set`
-**Solution:** Add `DATABASE_URL` to `.env` file (Supabase connection string)
+**Solution:** Add `DATABASE_URL` to `.env` file (local or managed PostgreSQL connection string)
 
 ### Tests failing
 **Solution:** Ensure database is migrated before running tests
@@ -317,7 +316,7 @@ lsof -i :3001 | awk 'NR>1 {print $2}' | xargs kill -9
 
 ## 🚀 Next Steps
 
-1. **Setup Database:** Follow [SETUP.md](./SETUP.md#2-database-setup-supabase-postgresql)
+1. **Setup Database:** Follow [SETUP.md](./SETUP.md#2-database-setup-postgresql)
 2. **Run Migrations:** `pnpm run push` in `lib/db`
 3. **Seed Data:** `pnpm run seed` from root
 4. **Start Services:** Start backend and frontend
@@ -332,7 +331,7 @@ lsof -i :3001 | awk 'NR>1 {print $2}' | xargs kill -9
 
 - **Setup Issues:** Check [SETUP.md](./SETUP.md#-troubleshooting)
 - **Deployment Issues:** Check [DEPLOYMENT.md](./DEPLOYMENT.md#-troubleshooting)
-- **Database:** https://supabase.com/docs
+- **Database:** https://www.postgresql.org/docs/
 - **Backend Framework:** https://expressjs.com/
 - **Frontend Framework:** https://react.dev/
 - **Testing:** https://vitest.dev/

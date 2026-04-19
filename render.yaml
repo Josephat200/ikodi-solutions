@@ -22,7 +22,7 @@ services:
           name: ikodi-postgres
           property: connectionString
       - key: DATABASE_SSL
-        value: disable
+        value: require
       - key: SENDGRID_API_KEY
         sync: false
       - key: SENDGRID_FROM_EMAIL

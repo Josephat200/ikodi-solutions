@@ -5,7 +5,7 @@
 This guide covers deploying the IKODI system to production environments. The system consists of:
 - **Backend**: Express.js API server (Node.js)
 - **Frontend**: React application (Vite)
-- **Database**: PostgreSQL (Supabase)
+- **Database**: PostgreSQL (project-owned / platform-managed)
 - **Infrastructure**: Docker containers (optional)
 
 ---
@@ -16,7 +16,7 @@ This guide covers deploying the IKODI system to production environments. The sys
 
 #### Prerequisites
 - Docker and Docker Compose installed
-- Supabase PostgreSQL database created
+- PostgreSQL database provisioned for the deployment target
 - Environment variables prepared
 
 #### Step 1: Create Dockerfile
@@ -133,7 +133,7 @@ Railway.app is a modern platform as a service (good for Replit users):
 #### Step 3: Environment Variables
 Add to Railway dashboard:
 ```
-DATABASE_URL=your_supabase_connection_string
+DATABASE_URL=your_postgres_connection_string
 SESSION_SECRET=change_this_to_random_value
 NODE_ENV=production
 SENDGRID_API_KEY=your_key
@@ -142,27 +142,15 @@ TWILIO_ACCOUNT_SID=your_sid
 
 ---
 
-### Option 3: Vercel Frontend + Railway Backend
+### Option 3: Render Single-Service Deployment
 
-Best for separating frontend and backend:
+This repository is configured to deploy as one Render web service.
 
-#### Frontend on Vercel
-1. Use the existing `vercel.json` at project root.
-2. In Vercel project settings, set Root Directory to repository root.
-3. Add environment variable:
-```
-VITE_API_URL=https://your-backend-domain
-```
-4. Deploy to production:
-```bash
-vercel deploy --prod
-```
-
-#### Backend on Render (recommended)
 - Use `render.yaml` blueprint in this repository.
-- Set `CORS_ORIGINS` in Render to include your Vercel domain(s), e.g.:
+- Render provisions the PostgreSQL database in the same app blueprint.
+- Set `CORS_ORIGINS` in Render to include your Render service origin, e.g.:
 ```
-https://your-frontend.vercel.app,https://*.vercel.app
+https://ikodi-management-system.onrender.com
 ```
 - Ensure `UPLOADS_DIR=/opt/render/project/src/uploads` is set.
 
@@ -299,11 +287,11 @@ docker-compose logs -f api
 tail -f /var/log/nginx/error.log
 ```
 
-### Database Backups (Supabase)
-1. Go to Supabase Dashboard
-2. Settings → Backups
-3. Enable automated daily backups
-4. Configure backup retention
+### Database Backups
+1. Open the database console for your deployment platform
+2. Enable automated backups or snapshots
+3. Configure retention to match your recovery policy
+4. Test restore procedures periodically
 
 ### Update Application
 ```bash
@@ -384,8 +372,8 @@ node --inspect dist/index.mjs
 
 - Documentation: See [SETUP.md](./SETUP.md)
 - Issues: Check logs first, then GitHub issues
-- Database: https://supabase.com/docs
-- Deployment guides: https://railway.app/docs, https://vercel.com/docs
+- Database: https://www.postgresql.org/docs/
+- Deployment guides: https://render.com/docs
 
 ---
 

@@ -5,23 +5,25 @@
 ### 1. Prerequisites
 - Node.js 18+ 
 - pnpm (package manager)
-- Supabase account (free tier available at https://supabase.com)
+- PostgreSQL database available locally or through your production host
 
-### 2. Database Setup (Supabase PostgreSQL)
+### 2. Database Setup (PostgreSQL)
 
-#### Step 1: Create Supabase Project
-1. Go to https://supabase.com and sign up
-2. Create a new project (Free tier is fine)
-3. Note your project URL and database password
-4. Go to **Project Settings → Database** to find your connection string
+#### Step 1: Start the local PostgreSQL service
+```bash
+pnpm run db:up
+```
+
+This starts the PostgreSQL container defined in [docker-compose.yml](./docker-compose.yml).
 
 #### Step 2: Configure Environment
 ```bash
 # In the project root, create .env file from template
 cp .env.example .env
 
-# Edit .env and add your Supabase connection string
-# DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres
+# Edit .env and set DATABASE_URL to your PostgreSQL connection string
+# Local development example:
+# DATABASE_URL=postgresql://ikodi:ikodi_dev_password@localhost:5432/ikodi_db
 ```
 
 #### Step 3: Run Migrations
@@ -169,8 +171,8 @@ Error: DATABASE_URL must be set. Did you forget to provision a database?
 Error: connect ECONNREFUSED 127.0.0.1:5432
 ```
 **Solution:** 
-- Ensure DATABASE_URL uses Supabase URL, not localhost
-- Verify Supabase project is running
+- Ensure the local PostgreSQL container is running
+- Verify DATABASE_URL points to the correct host and port
 - Check password doesn't have special characters (URL encode if needed)
 
 ### Port already in use

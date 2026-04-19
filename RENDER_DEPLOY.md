@@ -35,10 +35,11 @@ Yes. The Express API now serves the built React frontend in production from the 
 
 Set these in Render service settings:
 
-- `DATABASE_URL` (your hosted Postgres, e.g. Supabase)
+- `DATABASE_URL` (Render PostgreSQL connection from the blueprint)
+- `DATABASE_SSL` = `require`
 - `SESSION_SECRET` (long random secret)
 - `CORS_ORIGINS` (comma-separated allowed origins)
-  - Example: `https://ikodi-management-system.onrender.com,https://your-frontend.vercel.app,https://*.vercel.app`
+  - Example: `https://ikodi-management-system.onrender.com`
 - `BASE_PATH` = `/`
 - `NODE_ENV` = `production`
 - `UPLOADS_DIR` = `/opt/render/project/src/uploads`
@@ -57,7 +58,7 @@ Optional for messaging:
 
 - Render injects `PORT` automatically. The API uses `PORT` in production.
 - Do not set `VITE_API_URL` for this one-service setup. Frontend should use same origin.
-- If hosting frontend on Vercel, set `VITE_API_URL` in Vercel to your Render API origin (for example `https://ikodi-management-system.onrender.com`).
+- If you later split the app into separate Render services, keep `CORS_ORIGINS` on the API service and point the frontend at the Render API origin.
 - If your DB is new, run schema push/migrations before first login.
 
 ## Quick readiness checklist

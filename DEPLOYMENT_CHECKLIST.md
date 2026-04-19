@@ -1,6 +1,6 @@
 # IKODI Management System - Deployment Checklist
 
-Use this checklist for a clean release to GitHub + Render + Vercel.
+Use this checklist for a clean release to GitHub + Render.
 
 ---
 
@@ -53,32 +53,30 @@ git push origin main
 ## ☁️ Render Checklist (Backend)
 
 - [ ] Service created from this repository (Blueprint or manual)
+- [ ] PostgreSQL database created and linked in the Render blueprint
 - [ ] Build command:
   - `corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile && pnpm run render:build`
 - [ ] Start command:
   - `node artifacts/api-server/dist/index.mjs`
 - [ ] Environment variables configured:
   - `NODE_ENV=production`
-  - `DATABASE_URL`
+  - `DATABASE_URL` from the linked Render PostgreSQL resource
+  - `DATABASE_SSL=require`
   - `SESSION_SECRET`
   - `CORS_ORIGINS`
   - `UPLOADS_DIR=/opt/render/project/src/uploads`
 - [ ] Health check passes at `/api/health`
 
----
+## 🌐 Frontend Serving
 
-## ▲ Vercel Checklist (Frontend)
+- [ ] Confirm the frontend loads from the same Render service root URL
+- [ ] Confirm `/api/*` routes still resolve correctly after deployment
 
-- [ ] Import repository
-- [ ] Framework preset: Vite
-- [ ] Root directory: repository root
-- [ ] Build command:
-  - `pnpm -C artifacts/ikodi run build`
-- [ ] Output directory:
-  - `artifacts/ikodi/dist`
-- [ ] Environment variable set:
-  - `VITE_API_URL=https://your-render-domain.onrender.com`
-- [ ] Production deployment succeeds
+## 📄 Production Env Sample
+
+- [ ] Review [.env.production.example](./.env.production.example)
+- [ ] Confirm `DATABASE_URL` matches the Render PostgreSQL resource
+- [ ] Confirm `CORS_ORIGINS` includes the Render domain when using a single-service deploy
 
 ---
 
@@ -88,7 +86,7 @@ git push origin main
 - [ ] Login works with production account
 - [ ] Dashboard data loads
 - [ ] Student results upload/list/download/delete works
-- [ ] CORS/session behavior works from Vercel domain
+- [ ] CORS/session behavior works from the Render domain
 - [ ] `/api/health` returns healthy status
 
 ---
@@ -96,6 +94,5 @@ git push origin main
 ## 🧯 Rollback Readiness
 
 - [ ] Previous Render deploy is available for rollback
-- [ ] Previous Vercel deploy is available for instant promote
 - [ ] Last known good Git commit is tagged
 
