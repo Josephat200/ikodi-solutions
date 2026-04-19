@@ -62,8 +62,6 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
       - SESSION_SECRET=${SESSION_SECRET}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
@@ -136,7 +134,6 @@ Add to Railway dashboard:
 DATABASE_URL=your_postgres_connection_string
 SESSION_SECRET=change_this_to_random_value
 NODE_ENV=production
-SENDGRID_API_KEY=your_key
 TWILIO_ACCOUNT_SID=your_sid
 ```
 
@@ -384,7 +381,7 @@ node --inspect dist/index.mjs
 - [ ] SSL certificate valid
 - [ ] API health check passing
 - [ ] Frontend accessible
-- [ ] Email/SMS services configured
+- [ ] SMS services configured
 - [ ] User authentication working
 - [ ] Audit logs being recorded
 - [ ] Performance acceptable

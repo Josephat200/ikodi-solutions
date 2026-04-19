@@ -14,7 +14,6 @@ type RecipientType = "student" | "sponsor" | "guardian" | "all";
 type RecipientContact = {
   recipientName: string | null;
   phone: string | null;
-  email: string | null;
 };
 type RecipientTargetType = Exclude<RecipientType, "all">;
 type BroadcastTargets = {
@@ -28,7 +27,7 @@ type ResolvedRecipient = RecipientContact & {
 };
 
 function requiresSms(channel: string) {
-  return channel === "sms" || channel === "both";
+  return channel === "sms";
 }
 
 function toBoolean(value: unknown) {
@@ -72,7 +71,6 @@ async function resolveBroadcastRecipientsFromDb(targets: BroadcastTargets): Prom
         recipientId: student.id,
         recipientName: `${student.firstName} ${student.lastName}`.trim(),
         phone: normalizePhoneNumber(student.phone),
-        email: student.email,
       });
     }
   }
@@ -85,7 +83,6 @@ async function resolveBroadcastRecipientsFromDb(targets: BroadcastTargets): Prom
         recipientId: guardian.id,
         recipientName: guardian.name,
         phone: normalizePhoneNumber(guardian.phone),
-        email: guardian.email,
       });
     }
   }
@@ -98,7 +95,6 @@ async function resolveBroadcastRecipientsFromDb(targets: BroadcastTargets): Prom
         recipientId: sponsor.id,
         recipientName: sponsor.name,
         phone: normalizePhoneNumber(sponsor.phone),
-        email: sponsor.email,
       });
     }
   }
@@ -116,7 +112,6 @@ function resolveBroadcastRecipientsFromDev(targets: BroadcastTargets): ResolvedR
         recipientId: student.id,
         recipientName: `${student.firstName} ${student.lastName}`.trim(),
         phone: normalizePhoneNumber(student.phone),
-        email: student.email,
       });
     }
   }
@@ -128,7 +123,6 @@ function resolveBroadcastRecipientsFromDev(targets: BroadcastTargets): ResolvedR
         recipientId: sponsor.id,
         recipientName: sponsor.name,
         phone: normalizePhoneNumber(sponsor.phone),
-        email: sponsor.email,
       });
     }
   }
@@ -145,65 +139,60 @@ async function resolveBroadcastRecipients(targets: BroadcastTargets) {
 }
 
 async function resolveRecipientContactFromDb(recipientType: RecipientType, recipientId: number | null): Promise<RecipientContact> {
-  if (!recipientId) return { recipientName: null, phone: null, email: null };
+  if (!recipientId) return { recipientName: null, phone: null };
 
   if (recipientType === "student") {
     const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, recipientId));
-    if (!student) return { recipientName: null, phone: null, email: null };
+    if (!student) return { recipientName: null, phone: null };
     return {
       recipientName: `${student.firstName} ${student.lastName}`.trim(),
       phone: normalizePhoneNumber(student.phone),
-      email: student.email,
     };
   }
 
   if (recipientType === "sponsor") {
     const [sponsor] = await db.select().from(sponsorsTable).where(eq(sponsorsTable.id, recipientId));
-    if (!sponsor) return { recipientName: null, phone: null, email: null };
+    if (!sponsor) return { recipientName: null, phone: null };
     return {
       recipientName: sponsor.name,
       phone: normalizePhoneNumber(sponsor.phone),
-      email: sponsor.email,
     };
   }
 
   if (recipientType === "guardian") {
     const [guardian] = await db.select().from(guardiansTable).where(eq(guardiansTable.id, recipientId));
-    if (!guardian) return { recipientName: null, phone: null, email: null };
+    if (!guardian) return { recipientName: null, phone: null };
     return {
       recipientName: guardian.name,
       phone: normalizePhoneNumber(guardian.phone),
-      email: guardian.email,
     };
   }
 
-  return { recipientName: null, phone: null, email: null };
+  return { recipientName: null, phone: null };
 }
 
 function resolveRecipientContactFromDev(recipientType: RecipientType, recipientId: number | null): RecipientContact {
-  if (!recipientId) return { recipientName: null, phone: null, email: null };
+  if (!recipientId) return { recipientName: null, phone: null };
 
   if (recipientType === "student") {
     const student = getDevStudent(recipientId);
-    if (!student) return { recipientName: null, phone: null, email: null };
+    if (!student) return { recipientName: null, phone: null };
     return {
       recipientName: `${student.firstName} ${student.lastName}`.trim(),
       phone: normalizePhoneNumber(student.phone),
-      email: student.email,
     };
   }
 
   if (recipientType === "sponsor") {
     const sponsor = getDevSponsor(recipientId);
-    if (!sponsor) return { recipientName: null, phone: null, email: null };
+    if (!sponsor) return { recipientName: null, phone: null };
     return {
       recipientName: sponsor.name,
       phone: normalizePhoneNumber(sponsor.phone),
-      email: sponsor.email,
     };
   }
 
-  return { recipientName: null, phone: null, email: null };
+  return { recipientName: null, phone: null };
 }
 
 async function resolveRecipientContact(recipientType: RecipientType, recipientId: number | null): Promise<RecipientContact> {
@@ -226,8 +215,8 @@ router.get("/preview", requireAuth, async (req, res) => {
     return;
   }
 
-  if (!["sms", "email", "both"].includes(rawChannel)) {
-    res.status(400).json({ error: "channel must be one of sms, email, both" });
+  if (rawChannel !== "sms") {
+    res.status(400).json({ error: "channel must be sms" });
     return;
   }
 
@@ -299,7 +288,6 @@ router.get("/recipient-contact", requireAuth, async (req, res) => {
   res.json({
     recipientName: contact.recipientName,
     phone: contact.phone,
-    email: contact.email,
     hasValidSmsPhone: isValidPhoneNumber(contact.phone),
   });
 });
@@ -351,8 +339,8 @@ router.post("/", requireCommunicationsWriteAccess, async (req, res) => {
   if (!["student", "sponsor", "guardian", "all"].includes(String(recipientType))) {
     res.status(400).json({ error: "recipientType must be one of student, sponsor, guardian, all" }); return;
   }
-  if (!["sms", "email", "both"].includes(String(channel))) {
-    res.status(400).json({ error: "channel must be one of sms, email, both" }); return;
+  if (String(channel) !== "sms") {
+    res.status(400).json({ error: "channel must be sms" }); return;
   }
 
   const normalizedRecipientId = recipientId == null || recipientId === "" ? null : Number(recipientId);

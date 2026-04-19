@@ -33,7 +33,8 @@ Yes. The Express API now serves the built React frontend in production from the 
 
 ## Required environment variables
 
-Set these in Render service settings:
+Set these in Render service settings.
+If you are using this repository's `.env` as your source of truth, copy each key/value from `.env` into Render (without quotes):
 
 - `DATABASE_URL` (Render PostgreSQL connection from the blueprint)
 - `DATABASE_SSL` = `require`
@@ -43,6 +44,7 @@ Set these in Render service settings:
 - `BASE_PATH` = `/`
 - `NODE_ENV` = `production`
 - `UPLOADS_DIR` = `/opt/render/project/src/uploads`
+- `ENABLE_DEV_AUTH_BYPASS` = `false`
 
 Optional for messaging:
 
@@ -53,6 +55,11 @@ Optional for messaging:
   - `TWILIO_SENDER_ID`
   - `TWILIO_PHONE_NUMBER`
 - `SMS_BRAND_NAME` (default `IKODI`)
+
+Recommended optional hardening:
+
+- `LOG_LEVEL` = `info`
+- `BCRYPT_ROUNDS` = `12`
 
 ## Notes
 

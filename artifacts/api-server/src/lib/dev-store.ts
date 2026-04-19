@@ -73,7 +73,7 @@ export type DevCommunication = {
   sentById: number | null;
   recipientType: "student" | "sponsor" | "guardian" | "all";
   recipientId: number | null;
-  channel: "email" | "sms" | "both";
+  channel: "sms";
   subject: string | null;
   message: string;
   status: "sent" | "failed" | "pending";

@@ -24,8 +24,6 @@ const apiBaseUrl = configuredApiUrl
 
 const channelColors: Record<string, string> = {
   sms: "bg-green-100 text-green-800",
-  email: "bg-blue-100 text-blue-800",
-  both: "bg-purple-100 text-purple-800",
 };
 
 export default function Communications() {
@@ -43,7 +41,7 @@ export default function Communications() {
     targetGuardians: true,
     targetSponsors: false,
   });
-  const [recipientContact, setRecipientContact] = useState<{ recipientName: string | null; phone: string | null; email: string | null; hasValidSmsPhone: boolean } | null>(null);
+  const [recipientContact, setRecipientContact] = useState<{ recipientName: string | null; phone: string | null; hasValidSmsPhone: boolean } | null>(null);
   const [preview, setPreview] = useState<{ totalRecipients: number; recipientsWithValidSmsPhone: number; missingValidPhoneCount: number } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -194,7 +192,7 @@ export default function Communications() {
 
   const isBroadcast = form.recipientType === "all";
   const hasBroadcastTarget = form.targetStudents || form.targetGuardians || form.targetSponsors;
-  const smsRequiresPhone = form.channel === "sms" || form.channel === "both";
+  const smsRequiresPhone = form.channel === "sms";
   const smsContactValid = form.recipientType === "all" ? false : Boolean(recipientContact?.hasValidSmsPhone);
   const canSubmit = Boolean(
     (isBroadcast ? hasBroadcastTarget : form.recipientId) &&
@@ -206,7 +204,7 @@ export default function Communications() {
   return (
     <div className="space-y-6 notifications-watermark">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold">Communications</h1><p className="text-muted-foreground text-sm mt-1">SMS, email and contact history</p></div>
+        <div><h1 className="text-2xl font-bold">Communications</h1><p className="text-muted-foreground text-sm mt-1">SMS and contact history</p></div>
         {canCreateCommunications && <Button onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-2" />New Message</Button>}
       </div>
 
@@ -300,12 +298,10 @@ export default function Communications() {
             </div>
             <div className="space-y-1.5">
               <Label>Method *</Label>
-                <Select value={form.channel} onValueChange={v => setForm(f => ({ ...f, channel: v }))}>
+              <Select value={form.channel} onValueChange={v => setForm(f => ({ ...f, channel: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sms">SMS</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="both">Both</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -317,7 +313,6 @@ export default function Communications() {
                   <>
                     <p>Recipient: {recipientContact.recipientName || "Unknown"}</p>
                     <p>Phone: {recipientContact.phone || "Not set"}</p>
-                    <p>Email: {recipientContact.email || "Not set"}</p>
                     {smsRequiresPhone && !recipientContact.hasValidSmsPhone ? (
                       <p className="text-destructive">A valid phone number is required to send SMS.</p>
                     ) : null}
@@ -332,7 +327,7 @@ export default function Communications() {
               {!previewLoading && !previewError && preview ? (
                 <>
                   <p>Recipients targeted: {preview.totalRecipients}</p>
-                  {(form.channel === "sms" || form.channel === "both") ? (
+                  {form.channel === "sms" ? (
                     <>
                       <p>With valid phone: {preview.recipientsWithValidSmsPhone}</p>
                       <p>Missing valid phone: {preview.missingValidPhoneCount}</p>

@@ -31,18 +31,17 @@
 
 **Next Step:** Run `pnpm run test` after setup to verify all tests pass
 
-### 4. ✅ Email & SMS Services
-- [x] Created email service abstraction with SendGrid support
+### 4. ✅ SMS Services
 - [x] Created SMS service abstraction with Twilio support
 - [x] Implemented mock services for development
-- [x] Created email/SMS templates for:
+- [x] Created SMS templates for:
   - Sponsorship confirmations
   - Payment receipts
   - Payment reminders
   - Student notifications
 - [x] Set up configuration in `.env.example`
 
-**Next Step:** Add SendGrid API key and Twilio credentials to `.env`
+**Next Step:** Add Twilio credentials to `.env`
 
 ### 5. ✅ Documentation
 - [x] Created [SETUP.md](./SETUP.md) - Complete setup guide
@@ -119,7 +118,6 @@ Great-Idea/
 │   │   ├── vitest.config.ts    # Test configuration
 │   │   ├── src/
 │   │   │   ├── lib/
-│   │   │   │   ├── email.ts    # Email service (SendGrid)
 │   │   │   │   ├── sms.ts      # SMS service (Twilio)
 │   │   │   │   └── auth.ts     # Authentication utilities
 │   │   │   ├── tests/          # TEST SUITE (80+ tests)
@@ -254,8 +252,6 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployments guides:
 - `SESSION_SECRET` - Session encryption key (change in production!)
 
 **Optional but Recommended:**
-- `SENDGRID_API_KEY` - For email delivery
-- `SENDGRID_FROM_EMAIL` - Sender email address
 - `TWILIO_ACCOUNT_SID` - For SMS delivery
 - `TWILIO_AUTH_TOKEN` - Twilio authentication
 - `TWILIO_PHONE_NUMBER` - Sender phone number
@@ -274,13 +270,11 @@ See [.env.example](./.env.example) for all options.
 - [ ] Frontend starts: `pnpm -C artifacts/ikodi run dev`
 - [ ] Can log in with `admin@ikodi.local` / `Admin@123456`
 - [ ] `pnpm run test` passes all 80+ tests
-- [ ] Email service configured (at least mock)
 - [ ] SMS service configured (at least mock)
 
 ### Before Production
 - [ ] Read [DEPLOYMENT.md](./DEPLOYMENT.md)
 - [ ] Generate new `SESSION_SECRET`
-- [ ] Configure real email service (SendGrid)
 - [ ] Configure real SMS service (Twilio)
 - [ ] Set up database backups
 - [ ] Configure SSL/HTTPS
@@ -309,8 +303,8 @@ pnpm run test
 lsof -i :3001 | awk 'NR>1 {print $2}' | xargs kill -9
 ```
 
-### Email/SMS not sending
-**Solution:** Add API keys to `.env` or use mock services in development
+### SMS not sending
+**Solution:** Add Twilio credentials to `.env` or use mock services in development
 
 ---
 
@@ -321,7 +315,7 @@ lsof -i :3001 | awk 'NR>1 {print $2}' | xargs kill -9
 3. **Seed Data:** `pnpm run seed` from root
 4. **Start Services:** Start backend and frontend
 5. **Run Tests:** `pnpm run test` to verify
-6. **Configuration:** Add SendGrid and Twilio keys to `.env`
+6. **Configuration:** Add Twilio credentials to `.env`
 7. **Test Features:** Login and try core workflows
 8. **Deploy:** Follow [DEPLOYMENT.md](./DEPLOYMENT.md) when ready
 

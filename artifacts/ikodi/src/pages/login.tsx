@@ -50,13 +50,13 @@ export default function Login() {
         <div className="global-watermark-pattern"></div>
         <div className="global-watermark-cover">
           <div className="global-watermark-cover-stamp">
-            <img src="/ikodi-logo.jpeg" alt="IKODI" />
+            <img src="/ikodi-logo-main.jpeg" alt="IKODI" />
             <span>IKODI I AM WITH YOU</span>
           </div>
         </div>
-        <div className="global-watermark-row row-a"><img src="/ikodi-logo.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
-        <div className="global-watermark-row row-b"><img src="/ikodi-logo.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
-        <div className="global-watermark-row row-c"><img src="/ikodi-logo.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
+        <div className="global-watermark-row row-a"><img src="/ikodi-logo-main.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
+        <div className="global-watermark-row row-b"><img src="/ikodi-logo-main.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
+        <div className="global-watermark-row row-c"><img src="/ikodi-logo-main.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
       </div>
 
       <div className="relative z-[1] flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-8">
@@ -64,7 +64,7 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           <CardHeader className="space-y-2 pb-4">
             <div className="flex items-center gap-4">
-              <img src="/ikodi-logo.jpeg" alt="IKODI Logo" className="h-14 w-14 rounded-xl object-cover" />
+              <img src="/ikodi-logo-main.jpeg" alt="IKODI Logo" className="h-14 w-14 rounded-xl object-cover" />
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">IKODI Portal</p>
                 <CardTitle className="text-3xl font-bold leading-none">Sign In</CardTitle>

@@ -14,6 +14,15 @@ const ALLOWED_RESULT_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/gif",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "application/rtf",
 ]);
 const uploadsRoot = process.env.UPLOADS_DIR?.trim()
   ? path.resolve(process.env.UPLOADS_DIR)
@@ -405,7 +414,7 @@ router.post("/:id/results", requireStudentWriteAccess, async (req, res) => {
     return;
   }
   if (!ALLOWED_RESULT_MIME_TYPES.has(mimeType)) {
-    res.status(400).json({ error: "Only PDF and image files are allowed" });
+    res.status(400).json({ error: "Only PDF, image, and common document files are allowed" });
     return;
   }
 

@@ -58,8 +58,22 @@ export default function StudentResultsPage() {
 
   const validateSelectedFile = (file: File | null) => {
     if (!file) return "Please choose a file";
-    const allowed = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
-    if (!allowed.has(file.type)) return "Only PDF, JPG, PNG, and WEBP files are allowed";
+    const allowed = new Set([
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "text/plain",
+      "application/rtf",
+    ]);
+    if (!allowed.has(file.type)) return "Only PDFs, images, and common document files are allowed";
     if (file.size > 10 * 1024 * 1024) return "File size must be 10MB or less";
     return "";
   };
@@ -195,11 +209,11 @@ export default function StudentResultsPage() {
               onDrop={onDropFile}
             >
               <p className="text-sm font-medium">Drag and drop result file here</p>
-              <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, WEBP up to 10MB</p>
+              <p className="text-xs text-muted-foreground mt-1">PDFs, images, and common document files up to 10MB</p>
               <div className="mt-3 flex justify-center">
                 <Input
                   type="file"
-                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,image/jpeg,image/png,image/webp,image/gif,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf"
                   className="max-w-sm"
                   onChange={(e) => {
                     const file = e.target.files?.[0] ?? null;
@@ -256,7 +270,7 @@ export default function StudentResultsPage() {
                       ) : isPdf(doc.mimeType) ? (
                         <FileArchive className="h-8 w-8 text-red-600" />
                       ) : (
-                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        <FileArchive className="h-8 w-8 text-muted-foreground" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">

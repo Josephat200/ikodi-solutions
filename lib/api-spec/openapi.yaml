@@ -1528,7 +1528,7 @@ components:
           nullable: true
         channel:
           type: string
-          enum: [email, sms, both]
+          enum: [sms]
         subject:
           type: string
           nullable: true
@@ -1561,7 +1561,7 @@ components:
           nullable: true
         channel:
           type: string
-          enum: [email, sms, both]
+          enum: [sms]
         subject:
           type: string
           nullable: true

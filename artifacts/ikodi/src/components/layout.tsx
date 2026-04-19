@@ -80,20 +80,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="global-watermark-pattern"></div>
         <div className="global-watermark-cover">
           <div className="global-watermark-cover-stamp">
-            <img src="/ikodi-logo.jpeg" alt="IKODI" />
+            <img src="/ikodi-logo-main.jpeg" alt="IKODI" />
             <span>IKODI I AM WITH YOU</span>
           </div>
         </div>
-        <div className="global-watermark-row row-a"><img src="/ikodi-logo.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
-        <div className="global-watermark-row row-b"><img src="/ikodi-logo.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
-        <div className="global-watermark-row row-c"><img src="/ikodi-logo.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
+        <div className="global-watermark-row row-a"><img src="/ikodi-logo-main.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
+        <div className="global-watermark-row row-b"><img src="/ikodi-logo-main.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
+        <div className="global-watermark-row row-c"><img src="/ikodi-logo-main.jpeg" alt="IKODI" /><span>IKODI I AM WITH YOU</span></div>
       </div>
 
       <div className="min-h-screen bg-background flex flex-col md:flex-row app-shell relative z-[1]">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-primary text-primary-foreground no-print">
         <div className="flex items-center gap-2 font-bold text-xl">
-          <img src="/ikodi-logo.jpeg" alt="IKODI Logo" className="h-8 w-8 rounded" />
+          <img src="/ikodi-logo-main.jpeg" alt="IKODI Logo" className="h-8 w-8 rounded" />
           <span>IKODI</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary/90">
@@ -104,7 +104,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div className={`${sidebarOpen ? "block" : "hidden"} md:block w-full md:w-64 bg-card border-r border-border shrink-0 flex flex-col fixed md:sticky top-0 h-screen z-40 no-print app-shell-sidebar`}>
         <div className="p-6 hidden md:flex items-center gap-3">
-          <img src="/ikodi-logo.jpeg" alt="IKODI Logo" className="h-12 w-12 rounded-lg" />
+          <img src="/ikodi-logo-main.jpeg" alt="IKODI Logo" className="h-12 w-12 rounded-lg" />
           <div>
             <h1 className="font-bold text-xl text-primary tracking-tight">IKODI</h1>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sponsorship Sys</p>
@@ -201,7 +201,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         <div className="print-only page-header-print hidden">
           <div className="flex items-center gap-3 mb-2">
-            <img src="/ikodi-logo.jpeg" alt="IKODI Logo" className="h-16 w-16 rounded" />
+            <img src="/ikodi-logo-main.jpeg" alt="IKODI Logo" className="h-16 w-16 rounded" />
             <div>
               <h1 className="text-2xl font-bold text-[#0F766E]">IKODI</h1>
               <p className="text-sm text-gray-600">Student Sponsorship Management System</p>

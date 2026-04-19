@@ -68,16 +68,7 @@ After seeding, use these to log in:
 
 ---
 
-## 🔧 Email & SMS Setup (Optional)
-
-### SendGrid (Email)
-1. Sign up at https://sendgrid.com (free tier: 100 emails/day)
-2. Go to **Settings → API Keys** and create an API key
-3. Add to `.env`:
-   ```
-   SENDGRID_API_KEY=your_key_here
-   SENDGRID_FROM_EMAIL=your-email@yourcompany.com
-   ```
+## 🔧 SMS Setup (Optional)
 
 ### Twilio (SMS)
 1. Sign up at https://twilio.com
@@ -90,7 +81,7 @@ After seeding, use these to log in:
    TWILIO_PHONE_NUMBER=+1234567890
    ```
 
-Communications sent through the app will now be delivered via email/SMS.
+Communications sent through the app will now be delivered via SMS.
 
 ---
 
@@ -221,7 +212,6 @@ Ensure:
 - [ ] Frontend running on http://localhost:5173
 - [ ] Can log in with admin@ikodi.local / Admin@123456
 - [ ] Tests pass (`pnpm run test`)
-- [ ] Email service configured (SendGrid) [Optional]
 - [ ] SMS service configured (Twilio) [Optional]
 
 Once all checks pass, the system is ready for use! 🎉

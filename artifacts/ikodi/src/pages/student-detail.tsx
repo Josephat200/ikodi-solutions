@@ -44,6 +44,7 @@ export default function StudentDetail() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [isUploadingResult, setIsUploadingResult] = useState(false);
+  const [isDragOverResult, setIsDragOverResult] = useState(false);
   const [studentFormError, setStudentFormError] = useState("");
   const [recordForm, setRecordForm] = useState({ term: "", year: new Date().getFullYear().toString(), subject: "", grade: "", gpa: "", remarks: "" });
   const [studentForm, setStudentForm] = useState({
@@ -94,23 +95,73 @@ export default function StudentDetail() {
     setUploadDescription("");
     setUploadFile(null);
     setUploadError("");
+    setIsDragOverResult(false);
     setShowUploadResult(true);
   };
 
+  const validateResultFile = (file: File | null) => {
+    if (!file) return "Please choose a file to upload";
+
+    const allowedTypes = new Set([
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "text/plain",
+      "application/rtf",
+    ]);
+
+    if (!allowedTypes.has(file.type)) {
+      return "Only PDFs, images, and common document files are allowed";
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return "File size must be 10MB or less";
+    }
+
+    return "";
+  };
+
+  const handleResultFile = (file: File | null) => {
+    const error = validateResultFile(file);
+    if (error) {
+      setUploadError(error);
+      setUploadFile(null);
+      return;
+    }
+
+    setUploadError("");
+    setUploadFile(file);
+
+    if (file && !uploadTitle.trim()) {
+      setUploadTitle(file.name);
+    }
+  };
+
+  const onDropResultFile = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOverResult(false);
+    handleResultFile(event.dataTransfer.files?.[0] ?? null);
+  };
+
   const uploadStudentResult = async () => {
-    if (!uploadFile) {
+    const error = validateResultFile(uploadFile);
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+
+    const file = uploadFile;
+    if (!file) {
       setUploadError("Please choose a file to upload");
-      return;
-    }
-
-    const allowedTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
-    if (!allowedTypes.has(uploadFile.type)) {
-      setUploadError("Only PDF, JPG, PNG, and WEBP files are allowed");
-      return;
-    }
-
-    if (uploadFile.size > 10 * 1024 * 1024) {
-      setUploadError("File size must be 10MB or less");
       return;
     }
 
@@ -130,7 +181,7 @@ export default function StudentDetail() {
           resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
         };
         reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(uploadFile);
+        reader.readAsDataURL(file);
       });
 
       const response = await fetch(resolveApiPath(`/api/students/${id}/results`), {
@@ -139,10 +190,10 @@ export default function StudentDetail() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: uploadTitle.trim() || uploadFile.name,
+          title: uploadTitle.trim() || file.name,
           description: uploadDescription.trim() || null,
-          fileName: uploadFile.name,
-          mimeType: uploadFile.type,
+          fileName: file.name,
+          mimeType: file.type,
           fileContentBase64,
         }),
         credentials: "include",
@@ -155,6 +206,7 @@ export default function StudentDetail() {
 
       queryClient.invalidateQueries({ queryKey: getGetStudentQueryKey(id) });
       setShowUploadResult(false);
+      setIsDragOverResult(false);
       toast({ title: "Result uploaded", description: "Student result file uploaded successfully." });
     } catch (error: any) {
       setUploadError(String(error?.message || "Failed to upload result"));
@@ -536,13 +588,26 @@ export default function StudentDetail() {
                 placeholder="Optional notes"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>File (PDF, JPG, PNG, WEBP, max 10MB)</Label>
-              <Input
-                type="file"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
-                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-              />
+            <div
+              className={`rounded-lg border-2 border-dashed p-5 text-center transition-colors ${isDragOverResult ? "border-primary bg-primary/5" : "border-border"}`}
+              onDragOver={(event) => { event.preventDefault(); setIsDragOverResult(true); }}
+              onDragLeave={(event) => { event.preventDefault(); setIsDragOverResult(false); }}
+              onDrop={onDropResultFile}
+            >
+              <p className="text-sm font-medium">Drag and drop a result file here</p>
+              <p className="mt-1 text-xs text-muted-foreground">PDFs, images, and common document files up to 10MB</p>
+              <div className="mt-3 flex justify-center">
+                <Input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,image/jpeg,image/png,image/webp,image/gif,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf"
+                  onChange={(e) => handleResultFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+              {uploadFile && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Selected: {uploadFile.name} ({formatFileSize(uploadFile.size)})
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
