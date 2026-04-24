@@ -12,6 +12,46 @@ This guide covers deploying the IKODI system to production environments. The sys
 
 ## 🚀 Deployment Strategies
 
+### Option 0: File-Based PostgreSQL (Self-Hosted)
+
+Use this when you want the database to live in the project folder on the same server as the app.
+This uses local PostgreSQL data files under `.local/postgres-data` and does not require a managed cloud DB.
+
+#### Best fit
+- Single-server deployment (Windows server or dedicated VM)
+- You control persistent disk and backups
+- You want zero external database dependency
+
+#### Step 1: Prepare environment
+```bash
+cp .env.production.filedb.example .env
+# Edit .env with your domain, strong SESSION_SECRET, and DB password
+```
+
+#### Step 2: Initialize file-based database and schema
+```bash
+pnpm install
+pnpm run prod:filedb:init
+```
+
+#### Step 3: Build and verify deployment readiness
+```bash
+pnpm run prod:filedb:prepare
+```
+
+#### Step 4: Start production API
+```bash
+pnpm run prod:filedb:start
+```
+
+#### Required operations for production safety
+- Keep `.local/postgres-data` on persistent disk (never ephemeral tmp storage)
+- Back up `.local/postgres-data` and `uploads/` regularly
+- Run behind HTTPS reverse proxy (Nginx/Caddy/IIS)
+- Keep `ENABLE_DEV_AUTH_BYPASS=false`
+
+---
+
 ### Option 1: Docker Container Deployment (Recommended)
 
 #### Prerequisites

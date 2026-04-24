@@ -90,12 +90,47 @@ function validateEnv(env: EnvMap): void {
 
   const strict = isStrictMode();
   const isProduction = (env.NODE_ENV ?? "").toLowerCase() === "production";
+  const dbMode = (env.DB_MODE ?? "managed").toLowerCase();
 
   if (!env.CORS_ORIGINS) {
     if (strict || isProduction) {
       fail("CORS_ORIGINS must be set for production/strict deployment preflight.");
     }
     warn("CORS_ORIGINS is not set. Required for production deployments.");
+  }
+
+  const corsOrigins = env.CORS_ORIGINS ?? "";
+  if (
+    (strict || isProduction) &&
+    (corsOrigins.includes("<") ||
+      corsOrigins.includes(">") ||
+      corsOrigins.includes("your-") ||
+      corsOrigins.includes("example"))
+  ) {
+    fail("CORS_ORIGINS looks like a placeholder value.");
+  }
+
+  if (!["managed", "file"].includes(dbMode)) {
+    fail("DB_MODE must be one of: managed, file");
+  }
+
+  const dbUrlIsLocal = /localhost|127\.0\.0\.1/.test(dbUrl);
+  if (dbMode === "file") {
+    if (!dbUrlIsLocal) {
+      fail("DB_MODE=file requires DATABASE_URL to point to localhost/127.0.0.1");
+    }
+
+    if ((env.DATABASE_SSL ?? "").toLowerCase() === "require") {
+      fail("DB_MODE=file should not use DATABASE_SSL=require for local file-based PostgreSQL");
+    }
+
+    const pgDataDir = resolve(repoRoot, ".local", "postgres-data");
+    if (!existsSync(pgDataDir)) {
+      if (strict) {
+        fail(`DB_MODE=file requires PostgreSQL data directory at ${pgDataDir}`);
+      }
+      warn(`Local PostgreSQL data directory not found at ${pgDataDir}`);
+    }
   }
 
   console.log("[check:deploy] Environment checks passed.");

@@ -50,6 +50,18 @@ git push origin main
 
 ---
 
+## 🗂️ File-Based PostgreSQL Checklist (Self-Hosted)
+
+- [ ] `.env` prepared from [.env.production.filedb.example](./.env.production.filedb.example)
+- [ ] `DB_MODE=file` configured
+- [ ] `DATABASE_URL` points to localhost (`postgresql://...@localhost:5432/...`)
+- [ ] Local DB initialized: `pnpm run prod:filedb:init`
+- [ ] Production readiness preflight passes: `pnpm run prod:filedb:check`
+- [ ] `NODE_ENV=production` and `CORS_ORIGINS` set to production domain
+- [ ] `ENABLE_DEV_AUTH_BYPASS=false`
+- [ ] Persistent backups configured for `.local/postgres-data` and `uploads/`
+- [ ] Health check passes at `/api/health`
+
 ## ☁️ Render Checklist (Backend)
 
 - [ ] Service created from this repository (Blueprint or manual)

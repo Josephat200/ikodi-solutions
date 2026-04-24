@@ -63,6 +63,7 @@ pnpm run db:up
 cp .env.example .env
 
 # 4. Edit .env and ensure DATABASE_URL points to your PostgreSQL instance
+#    and set DB_MODE=file for project-folder file-based PostgreSQL
 ```
 
 ### Minute 2-5: Run Migrations & Seed
@@ -240,8 +241,9 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployments guides:
 - Quick release checklist: [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)
 
 1. **Render** (Recommended - one service with managed PostgreSQL)
-2. **Docker Compose** (Local/container-based alternative)
-3. **Traditional VPS** (AWS EC2, DigitalOcean, Linode)
+2. **Self-hosted File-Based PostgreSQL** (database files under `.local/postgres-data`)
+3. **Docker Compose** (Local/container-based alternative)
+4. **Traditional VPS** (AWS EC2, DigitalOcean, Linode)
 
 ---
 

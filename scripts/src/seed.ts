@@ -42,13 +42,25 @@ async function seed() {
   try {
     // Clear existing data (development only!)
     console.log("Clearing existing data...");
-    await db.delete(paymentsTable);
-    await db.delete(sponsorshipsTable);
-    await db.delete(guardiansTable);
-    await db.delete(studentsTable);
-    await db.delete(sponsorsTable);
-    await db.delete(schoolsTable);
-    await db.delete(usersTable);
+    await db.execute(`
+      TRUNCATE TABLE
+        communications,
+        communication_preferences,
+        audit_logs,
+        attendance,
+        fee_schedules,
+        documents,
+        payments,
+        sponsorships,
+        guardians,
+        academic_records,
+        students,
+        sponsors,
+        schools,
+        terms,
+        users
+      RESTART IDENTITY CASCADE
+    `);
 
     // 1. Create Users with stable system credentials
     console.log("✓ Creating users with stable system credentials...");

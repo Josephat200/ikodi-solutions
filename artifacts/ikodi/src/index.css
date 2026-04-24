@@ -232,7 +232,29 @@
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
-  body { background: white; color: black; font-size: 12pt; }
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+    position: relative;
+  }
+  body::before {
+    content: "IKODI I AM WITH YOU";
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-28deg);
+    transform-origin: center;
+    font-size: clamp(32px, 7vw, 72px);
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: rgba(15, 118, 110, 0.12);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 0;
+  }
   .app-shell,
   .app-shell-main,
   .app-shell-content {
@@ -284,6 +306,9 @@
     padding-top: 8px;
     font-size: 10pt;
     color: #666;
+  }
+  .global-watermark {
+    display: none !important;
   }
 }
 

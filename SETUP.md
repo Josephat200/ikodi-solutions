@@ -5,7 +5,7 @@
 ### 1. Prerequisites
 - Node.js 18+ 
 - pnpm (package manager)
-- PostgreSQL database available locally or through your production host
+- PostgreSQL runtime in this project folder (`.local/pg-runtime`) for file-based mode
 
 ### 2. Database Setup (PostgreSQL)
 
@@ -14,7 +14,7 @@
 pnpm run db:up
 ```
 
-This starts the PostgreSQL container defined in [docker-compose.yml](./docker-compose.yml).
+This starts PostgreSQL from the local runtime under `.local/` in this project folder.
 
 #### Step 2: Configure Environment
 ```bash
@@ -23,6 +23,7 @@ cp .env.example .env
 
 # Edit .env and set DATABASE_URL to your PostgreSQL connection string
 # Local development example:
+# DB_MODE=file
 # DATABASE_URL=postgresql://ikodi:ikodi_dev_password@localhost:5432/ikodi_db
 ```
 
@@ -162,7 +163,7 @@ Error: DATABASE_URL must be set. Did you forget to provision a database?
 Error: connect ECONNREFUSED 127.0.0.1:5432
 ```
 **Solution:** 
-- Ensure the local PostgreSQL container is running
+- Ensure local PostgreSQL is running (`pnpm run db:up`)
 - Verify DATABASE_URL points to the correct host and port
 - Check password doesn't have special characters (URL encode if needed)
 
