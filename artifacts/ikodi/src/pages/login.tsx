@@ -17,6 +17,26 @@ export default function Login() {
   const login = useLogin();
   const { toast } = useToast();
 
+  const resolveLoginErrorMessage = (error: unknown) => {
+    if (error && typeof error === "object") {
+      const status = "status" in error ? Number((error as { status?: unknown }).status) : undefined;
+      const message =
+        "message" in error && typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "";
+
+      if (status === 401) return "Invalid username or password.";
+      if (status === 429) return "Too many login attempts. Please wait and try again.";
+      if (status && status >= 500) return "Server error while signing in. Please try again shortly.";
+
+      if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+        return "Cannot reach the API server. Ensure the backend is running on http://localhost:3001.";
+      }
+    }
+
+    return "Could not sign in. Please verify the server is running and try again.";
+  };
+
   if (user) {
     return <Redirect to={getDefaultPathForRole(user.role)} />;
   }
@@ -26,7 +46,7 @@ export default function Login() {
     if (!username || !password) return;
 
     const normalizedUsername = username.trim();
-    const normalizedPassword = password.trim();
+    const normalizedPassword = password;
 
     login.mutate({
       data: { username: normalizedUsername, password: normalizedPassword }
@@ -34,10 +54,10 @@ export default function Login() {
       onSuccess: (data: any) => {
         setUser(data.user);
       },
-      onError: () => {
+      onError: (error: unknown) => {
         toast({
           title: "Login Failed",
-          description: "Invalid username or password.",
+          description: resolveLoginErrorMessage(error),
           variant: "destructive"
         });
       }

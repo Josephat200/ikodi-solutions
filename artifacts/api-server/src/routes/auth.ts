@@ -59,10 +59,13 @@ async function tryDevAuthBypass(identifier: string, password: string) {
 
 async function findUserForLogin(identifier: string) {
   try {
-    let [user] = await db.select().from(usersTable).where(eq(usersTable.username, identifier));
-    if (!user) {
-      [user] = await db.select().from(usersTable).where(eq(usersTable.email, identifier));
-    }
+    const normalizedIdentifier = identifier.toLowerCase();
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(
+        sql`lower(${usersTable.username}) = ${normalizedIdentifier} or lower(coalesce(${usersTable.email}, '')) = ${normalizedIdentifier}`,
+      );
     return user ?? null;
   } catch {
     const fallback = await db.execute(sql`
@@ -97,7 +100,7 @@ router.post("/login", loginRateLimiter, async (req, res) => {
   }
 
   const normalizedUsername = String(username).trim();
-  const normalizedPassword = String(password).trim();
+  const normalizedPassword = String(password);
 
   const devUser = await tryDevAuthBypass(normalizedUsername, normalizedPassword);
   if (devUser) {
