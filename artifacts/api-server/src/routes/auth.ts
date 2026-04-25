@@ -28,6 +28,16 @@ type DevDemoUser = {
   password: string;
 };
 
+function toIsoOrNull(value: unknown): string | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function toIsoOrNow(value: unknown): string {
+  return toIsoOrNull(value) ?? new Date().toISOString();
+}
+
 async function tryDevAuthBypass(identifier: string, password: string) {
   const enableTestBypass =
     process.env.NODE_ENV === "test" &&
@@ -143,8 +153,8 @@ router.post("/login", loginRateLimiter, async (req, res) => {
       email: user.email,
       role: user.role,
       isActive: user.isActive,
-      lastLogin: user.lastLogin?.toISOString() ?? null,
-      createdAt: user.createdAt.toISOString(),
+      lastLogin: toIsoOrNull(user.lastLogin),
+      createdAt: toIsoOrNow(user.createdAt),
     },
     token: "session",
   });
@@ -182,8 +192,8 @@ router.get("/me", async (req, res) => {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
-    lastLogin: user.lastLogin?.toISOString() ?? null,
-    createdAt: user.createdAt.toISOString(),
+    lastLogin: toIsoOrNull(user.lastLogin),
+    createdAt: toIsoOrNow(user.createdAt),
   });
 });
 
@@ -194,7 +204,7 @@ router.put("/me/profile", async (req, res) => {
   if (!fullName) { res.status(400).json({ error: "fullName required" }); return; }
   const [updated] = await db.update(usersTable).set({ fullName, email: email ?? null }).where(eq(usersTable.id, userId)).returning();
   await logAction(req, "UPDATE", "user", userId, "Profile updated");
-  res.json({ id: updated.id, username: updated.username, fullName: updated.fullName, email: updated.email, role: updated.role, isActive: updated.isActive, lastLogin: updated.lastLogin?.toISOString() ?? null, createdAt: updated.createdAt.toISOString() });
+  res.json({ id: updated.id, username: updated.username, fullName: updated.fullName, email: updated.email, role: updated.role, isActive: updated.isActive, lastLogin: toIsoOrNull(updated.lastLogin), createdAt: toIsoOrNow(updated.createdAt) });
 });
 
 router.put("/me/password", async (req, res) => {
