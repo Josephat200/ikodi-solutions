@@ -8,9 +8,7 @@ const apiBaseUrl = configuredApiUrl
 	? configuredApiUrl
 	: import.meta.env.DEV
 		? "http://localhost:3001"
-		: (() => {
-			throw new Error("VITE_API_URL must be set in production builds");
-		  })();
+		: window.location.origin;
 
 setBaseUrl(apiBaseUrl);
 
